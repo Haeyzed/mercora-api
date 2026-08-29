@@ -12,7 +12,8 @@
         "spatie/laravel-activitylog",
         "spatie/laravel-medialibrary",
         "spatie/laravel-permission",
-        "spatie/laravel-sluggable"
+        "spatie/laravel-sluggable",
+        "maatwebsite/excel"
     ],
     "sail": false,
     "skills": [
@@ -20,6 +21,7 @@
         "laravel-best-practices",
         "testing-best-practices",
         "tailwindcss-development",
+        "laravel-excel",
         "medialibrary-development",
         "laravel-permission-development",
         "sluggable-development",
