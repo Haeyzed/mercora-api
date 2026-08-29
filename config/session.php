@@ -176,7 +176,7 @@ return [
     | HTTP Access Only
     |--------------------------------------------------------------------------
     |
-    | Setting this value to true will prevent JavaScript from accessing the
+    | Settings this value to true will prevent JavaScript from accessing the
     | value of the cookie and the cookie will only be accessible through
     | the HTTP protocol. It's unlikely you should disable this option.
     |
@@ -206,7 +206,7 @@ return [
     | Partitioned Cookies
     |--------------------------------------------------------------------------
     |
-    | Setting this value to true will tie the cookie to the top-level site for
+    | Settings this value to true will tie the cookie to the top-level site for
     | a cross-site context. Partitioned cookies are accepted by the browser
     | when flagged "secure" and the Same-Site attribute is set to "none".
     |
@@ -220,7 +220,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This value controls the serialization strategy for session data, which
-    | is JSON by default. Setting this to "php" allows the storage of PHP
+    | is JSON by default. Settings this to "php" allows the storage of PHP
     | objects in the session but can make an application vulnerable to
     | "gadget chain" serialization attacks if the APP_KEY is leaked.
     |
