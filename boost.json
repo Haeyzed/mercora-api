@@ -9,11 +9,11 @@
     "mcp": true,
     "nightwatch": false,
     "packages": [
+        "maatwebsite/excel",
         "spatie/laravel-activitylog",
         "spatie/laravel-medialibrary",
         "spatie/laravel-permission",
-        "spatie/laravel-sluggable",
-        "maatwebsite/excel"
+        "spatie/laravel-sluggable"
     ],
     "sail": false,
     "skills": [

@@ -1,6 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\Landlord\RoleName;
+use App\Models\Landlord\User;
+use App\Support\Landlord\Authorization;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /*
@@ -15,8 +18,23 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
     ->in('Feature');
+
+uses()->beforeEach(function (): void {
+    actingAsLandlord();
+})->in(
+    'Feature/Http/Controllers/Shared/World',
+    'Feature/Http/Controllers/Landlord/Tenants',
+    'Feature/Http/Controllers/Landlord/Plans',
+    'Feature/Http/Controllers/Landlord/Subscriptions',
+    'Feature/Http/Controllers/Landlord/Billing',
+    'Feature/Http/Controllers/Landlord/Settings',
+    'Feature/Http/Controllers/Landlord/Notifications',
+    'Feature/Http/Controllers/Landlord/ApiKeys',
+    'Feature/Http/Controllers/Landlord/Audit',
+    'Feature/Http/Controllers/Landlord/Users',
+    'Feature/Http/Controllers/Landlord/Roles',
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +62,22 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function landlordUser(array $overrides = []): User
 {
-    // ..
+    return activity()->withoutLogging(fn (): User => User::factory()->create($overrides));
+}
+
+function actingAsLandlord(?User $user = null, bool $superAdmin = true): User
+{
+    Authorization::seed();
+
+    $user ??= landlordUser();
+
+    if ($superAdmin && ! $user->hasRole(RoleName::SuperAdmin->value)) {
+        $user->assignRole(RoleName::SuperAdmin->value);
+    }
+
+    Sanctum::actingAs($user);
+
+    return $user;
 }
