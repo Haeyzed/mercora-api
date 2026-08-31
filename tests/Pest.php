@@ -3,6 +3,7 @@
 use App\Enums\Landlord\RoleName;
 use App\Models\Landlord\User;
 use App\Support\Landlord\Authorization;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -80,4 +81,43 @@ function actingAsLandlord(?User $user = null, bool $superAdmin = true): User
     Sanctum::actingAs($user);
 
     return $user;
+}
+
+function configureFlutterwaveForTests(): void
+{
+    config([
+        'payments.drivers.flutterwave.secret_key' => 'test-secret',
+        'payments.drivers.flutterwave.public_key' => 'test-public',
+        'payments.drivers.flutterwave.secret_hash' => 'test-hash',
+        'payments.drivers.flutterwave.base_url' => 'https://api.flutterwave.com/v3',
+    ]);
+}
+
+function fakeFlutterwaveInitialize(string $checkoutUrl = 'https://checkout.test/pay'): void
+{
+    Http::fake([
+        'https://api.flutterwave.com/v3/payments' => Http::response([
+            'status' => 'success',
+            'data' => [
+                'id' => '999',
+                'link' => $checkoutUrl,
+            ],
+        ]),
+    ]);
+}
+
+function fakeFlutterwaveVerify(string $reference, int $amountMinor, string $currency = 'USD', string $status = 'successful'): void
+{
+    Http::fake([
+        'https://api.flutterwave.com/v3/transactions/verify_by_reference*' => Http::response([
+            'status' => 'success',
+            'data' => [
+                'tx_ref' => $reference,
+                'status' => $status,
+                'amount' => $amountMinor / 100,
+                'currency' => $currency,
+                'id' => '888',
+            ],
+        ]),
+    ]);
 }

@@ -7,18 +7,33 @@ namespace App\Services\Landlord\Billing;
 use App\Enums\Landlord\InvoiceStatus;
 use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
+use App\Models\Landlord\Payment;
 use App\Models\Landlord\Subscription;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord invoices issued against subscription terms.
+ * Issues and settles landlord invoices against subscription billing terms.
+ *
+ * Domain: landlord billing ledger tied to tenant subscriptions.
+ *
+ * Invariants:
+ * - Invoices are issued only for subscriptions in a current status.
+ * - Amount and currency are snapshotted from the subscription at issue time.
+ * - Only open invoices can be updated, voided, or marked paid.
+ * - Payment settlement requires matching amount and currency on the verified payment.
+ * - At most one invoice per subscription billing period (idempotent via period_starts_at).
+ *
+ * Side effects: creates, updates, voids, soft-deletes, and restores {@see Invoice} records;
+ * links paid invoices to {@see Payment} records.
  */
 class InvoiceService
 {
@@ -68,7 +83,12 @@ class InvoiceService
     /**
      * Issue an open invoice from a subscription's snapshotted terms.
      *
+     * Locks the subscription row for the duration of the transaction.
+     *
      * @param  array{subscription_id: int, due_at?: string, notes?: string|null}  $data
+     *
+     * @throws ModelNotFoundException When the subscription does not exist.
+     * @throws ValidationException When the subscription is not current.
      */
     public function store(array $data): Invoice
     {
@@ -87,6 +107,11 @@ class InvoiceService
 
     /**
      * Issue an invoice from a subscription snapshot. Idempotent per billing period.
+     *
+     * Returns an existing invoice when one already exists for the same subscription and period start.
+     *
+     * @throws ValidationException When the subscription is not current.
+     * @throws UniqueConstraintViolationException When a concurrent insert races and no existing row is found.
      */
     public function issueFor(
         Subscription $subscription,
@@ -138,6 +163,8 @@ class InvoiceService
      * Update notes or due date on an open invoice.
      *
      * @param  array{due_at?: string|null, notes?: string|null}  $data
+     *
+     * @throws ValidationException When the invoice is not open.
      */
     public function update(Invoice $invoice, array $data): Invoice
     {
@@ -149,22 +176,52 @@ class InvoiceService
     }
 
     /**
-     * Mark an open invoice as paid.
+     * Initialize payment for an open invoice. Direct pay without payment is not allowed.
+     *
+     * @throws ValidationException Always; payment must go through the payment provider.
      */
     public function pay(Invoice $invoice): Invoice
     {
         $this->ensureOpen($invoice);
 
-        $invoice->update([
-            'status' => InvoiceStatus::Paid,
-            'paid_at' => now(),
+        throw ValidationException::withMessages([
+            'status' => 'Payment must be completed through the payment provider.',
         ]);
+    }
 
-        return $invoice->refresh();
+    /**
+     * Mark an open invoice as paid from a verified payment.
+     *
+     * @throws ValidationException When the invoice is not open or amount/currency mismatch.
+     * @throws ModelNotFoundException When the invoice row disappears during the transaction.
+     */
+    public function markPaidFromPayment(Invoice $invoice, Payment $payment): Invoice
+    {
+        return DB::transaction(function () use ($invoice, $payment): Invoice {
+            $invoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+
+            $this->ensureOpen($invoice);
+
+            if ($invoice->amount !== $payment->amount || $invoice->currency !== $payment->currency) {
+                throw ValidationException::withMessages([
+                    'amount' => 'The payment does not match the invoice.',
+                ]);
+            }
+
+            $invoice->update([
+                'status' => InvoiceStatus::Paid,
+                'paid_at' => $payment->paid_at ?? now(),
+                'payment_id' => $payment->id,
+            ]);
+
+            return $invoice->refresh();
+        });
     }
 
     /**
      * Void an open invoice.
+     *
+     * @throws ValidationException When the invoice is not open.
      */
     public function void(Invoice $invoice): Invoice
     {
@@ -188,6 +245,8 @@ class InvoiceService
 
     /**
      * Restore a soft-deleted invoice.
+     *
+     * @throws HttpException When the invoice is not trashed (404).
      */
     public function restore(Invoice $invoice): Invoice
     {
@@ -218,6 +277,11 @@ class InvoiceService
         Invoice::onlyTrashed()->whereKey($ids)->restore();
     }
 
+    /**
+     * Ensure the subscription is in a current billable status.
+     *
+     * @throws ValidationException When the subscription is not current.
+     */
     private function ensureCurrent(Subscription $subscription): void
     {
         if (in_array($subscription->status, SubscriptionStatus::currentCases(), true)) {
@@ -229,6 +293,11 @@ class InvoiceService
         ]);
     }
 
+    /**
+     * Ensure the invoice is open before mutating or settling.
+     *
+     * @throws ValidationException When the invoice is not open.
+     */
     private function ensureOpen(Invoice $invoice): void
     {
         if ($invoice->status === InvoiceStatus::Open) {
@@ -240,6 +309,9 @@ class InvoiceService
         ]);
     }
 
+    /**
+     * Generate a unique invoice number.
+     */
     private function nextNumber(): string
     {
         do {

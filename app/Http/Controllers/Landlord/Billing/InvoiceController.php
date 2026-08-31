@@ -10,9 +10,12 @@ use App\Http\Requests\Landlord\Billing\RestoreManyRequest;
 use App\Http\Requests\Landlord\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Landlord\Billing\UpdateInvoiceRequest;
 use App\Http\Resources\Landlord\Billing\InvoiceResource;
+use App\Http\Resources\Landlord\Payments\PaymentResource;
 use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\Invoice;
 use App\Services\Landlord\Billing\InvoiceService;
+use App\Services\Landlord\Payments\Exceptions\PaymentException;
+use App\Services\Landlord\Payments\PaymentService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
@@ -21,11 +24,15 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Validation\ValidationException;
 
 #[Group('Landlord Billing')]
 class InvoiceController extends Controller
 {
-    public function __construct(private InvoiceService $invoiceService) {}
+    public function __construct(
+        private InvoiceService $invoiceService,
+        private PaymentService $paymentService,
+    ) {}
 
     /**
      * List invoices.
@@ -110,16 +117,26 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Mark an invoice as paid.
+     * Initialize payment for an open invoice.
      */
     #[Endpoint(operationId: 'payLandlordInvoice', title: 'Pay an invoice')]
-    public function pay(Invoice $invoice): InvoiceResource
+    public function pay(Request $request, Invoice $invoice): PaymentResource
     {
         $this->authorize('pay', $invoice);
 
-        return $this->invoiceService
-            ->pay($invoice)
-            ->toResource(InvoiceResource::class);
+        try {
+            $payment = $this->paymentService->initializeForInvoice(
+                $invoice,
+                $request->user(),
+                $request->input('redirect_url'),
+            );
+        } catch (PaymentException $exception) {
+            throw ValidationException::withMessages([
+                'payment' => $exception->getMessage(),
+            ]);
+        }
+
+        return new PaymentResource($payment);
     }
 
     /**

@@ -13,11 +13,21 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 /**
- * Landlord role catalog backed by Spatie Permission.
+ * Manages the landlord role catalog backed by Spatie Permission.
+ *
+ * Domain: named roles with attached permissions for landlord users.
+ *
+ * Invariants:
+ * - The Super Admin role cannot be renamed, deleted, or stripped of any permission.
+ * - Roles use the web guard.
+ *
+ * Side effects: creates, updates, and deletes {@see Role} records and syncs permission pivots.
  */
 class RoleService
 {
     /**
+     * Paginate roles with their permissions, optionally filtered by search term.
+     *
      * @return LengthAwarePaginator<int, Role>
      */
     public function paginate(Request $request): LengthAwarePaginator
@@ -32,12 +42,17 @@ class RoleService
             ->withQueryString();
     }
 
+    /**
+     * Load a role with its permissions.
+     */
     public function show(Role $role): Role
     {
         return $role->load('permissions');
     }
 
     /**
+     * Create a role and optionally sync permissions.
+     *
      * @param  array{name: string, permissions?: list<string>}  $data
      */
     public function store(array $data): Role
@@ -55,7 +70,11 @@ class RoleService
     }
 
     /**
+     * Update a role's name and/or permissions.
+     *
      * @param  array{name?: string, permissions?: list<string>}  $data
+     *
+     * @throws ValidationException When renaming or demoting the Super Admin role.
      */
     public function update(Role $role, array $data): Role
     {
@@ -89,6 +108,11 @@ class RoleService
         });
     }
 
+    /**
+     * Delete a role.
+     *
+     * @throws ValidationException When attempting to delete the Super Admin role.
+     */
     public function destroy(Role $role): void
     {
         if ($this->isProtected($role)) {
@@ -100,6 +124,9 @@ class RoleService
         $role->delete();
     }
 
+    /**
+     * Determine whether the role is the protected Super Admin role.
+     */
     private function isProtected(Role $role): bool
     {
         return $role->name === RoleName::SuperAdmin->value;

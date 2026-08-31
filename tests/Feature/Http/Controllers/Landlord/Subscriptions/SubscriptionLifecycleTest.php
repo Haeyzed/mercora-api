@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Artisan;
 uses(LazilyRefreshDatabase::class);
 
 describe('renew', function () {
-    it('advances the billing period and issues an invoice', function () {
+    it('issues a renewal invoice without advancing the billing period', function () {
         $this->travelTo('2026-08-29 20:00:00');
 
         $subscription = Subscription::factory()->create([
@@ -23,8 +23,8 @@ describe('renew', function () {
 
         $this->postJson("/api/landlord/subscriptions/{$subscription->id}/renew")
             ->assertOk()
-            ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('data.ends_at', '2026-09-29T20:00:00.000000Z');
+            ->assertJsonPath('data.status', 'pending_payment')
+            ->assertJsonPath('data.ends_at', '2026-08-29T20:00:00.000000Z');
 
         $this->assertDatabaseCount('invoices', 1);
         $this->assertDatabaseHas('invoices', [
@@ -33,7 +33,7 @@ describe('renew', function () {
         ]);
     });
 
-    it('issues a new period invoice when an admin renews twice', function () {
+    it('is idempotent for the same renewal period', function () {
         $this->travelTo('2026-08-29 20:00:00');
 
         $subscription = Subscription::factory()->create([
@@ -46,8 +46,8 @@ describe('renew', function () {
 
         $this->postJson("/api/landlord/subscriptions/{$subscription->id}/renew")->assertOk();
 
-        expect($subscription->fresh()->ends_at->ne($endsAt))->toBeTrue();
-        $this->assertDatabaseCount('invoices', 2);
+        expect($subscription->fresh()->ends_at->eq($endsAt))->toBeTrue();
+        $this->assertDatabaseCount('invoices', 1);
     });
 
     it('returns 422 when a canceled subscription is renewed', function () {
@@ -60,7 +60,7 @@ describe('renew', function () {
 });
 
 describe('scheduled processing', function () {
-    it('converts an ended trial to active without renewing an open period', function () {
+    it('issues an invoice when a trial ends without activating the subscription', function () {
         $this->travelTo('2026-09-12 20:00:00');
 
         $subscription = Subscription::factory()->trialing()->create([
@@ -70,11 +70,11 @@ describe('scheduled processing', function () {
 
         Artisan::call('landlord:process-subscriptions');
 
-        expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Active);
-        $this->assertDatabaseCount('invoices', 0);
+        expect($subscription->fresh()->status)->toBe(SubscriptionStatus::PendingPayment);
+        $this->assertDatabaseCount('invoices', 1);
     });
 
-    it('renews a current subscription whose period has ended', function () {
+    it('issues a renewal invoice without advancing an ended period', function () {
         $this->travelTo('2026-09-29 20:00:00');
 
         $subscription = Subscription::factory()->create([
@@ -84,7 +84,8 @@ describe('scheduled processing', function () {
 
         Artisan::call('landlord:process-subscriptions');
 
-        expect($subscription->fresh()->ends_at->toIso8601String())->toBe('2026-10-29T20:00:00+00:00')
+        expect($subscription->fresh()->status)->toBe(SubscriptionStatus::PastDue)
+            ->and($subscription->fresh()->ends_at->toIso8601String())->toBe('2026-09-29T20:00:00+00:00')
             ->and(Invoice::query()->where('subscription_id', $subscription->id)->count())->toBe(1);
 
         Artisan::call('landlord:process-subscriptions');

@@ -7,6 +7,7 @@ namespace Database\Factories\Landlord;
 use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Plan;
+use App\Models\Landlord\PlanPrice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -16,6 +17,33 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SubscriptionFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Subscription $subscription): void {
+            if ($subscription->plan_price_id !== null) {
+                return;
+            }
+
+            $plan = $subscription->plan()->first();
+
+            if ($plan === null) {
+                return;
+            }
+
+            $planPrice = $plan->prices()->first() ?? PlanPrice::factory()->for($plan)->create([
+                'amount' => $subscription->price,
+                'currency' => $subscription->currency,
+                'interval' => $subscription->interval,
+            ]);
+
+            $subscription->update([
+                'plan_price_id' => $planPrice->id,
+                'plan_name' => $plan->name,
+                'interval_count' => $planPrice->interval_count,
+            ]);
+        });
+    }
+
     /**
      * @return array<string, mixed>
      */

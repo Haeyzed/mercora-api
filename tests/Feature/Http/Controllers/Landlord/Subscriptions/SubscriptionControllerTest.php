@@ -132,7 +132,7 @@ describe('store', function () {
             ->assertJsonPath('data.price', 2900)
             ->assertJsonPath('data.currency', 'USD')
             ->assertJsonPath('data.interval', 'monthly')
-            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.status', 'pending_payment')
             ->assertJsonPath('data.starts_at', '2026-08-29T20:00:00.000000Z')
             ->assertJsonPath('data.ends_at', '2026-09-29T20:00:00.000000Z')
             ->assertJsonPath('data.trial_ends_at', null)
@@ -143,7 +143,7 @@ describe('store', function () {
             'tenant_id' => $tenant->id,
             'plan_id' => $plan->id,
             'price' => 2900,
-            'status' => SubscriptionStatus::Active->value,
+            'status' => SubscriptionStatus::PendingPayment->value,
         ]);
     });
 
@@ -181,7 +181,7 @@ describe('store', function () {
         ])
             ->assertCreated()
             ->assertJsonPath('data.price', 2900)
-            ->assertJsonPath('data.status', 'active');
+            ->assertJsonPath('data.status', 'pending_payment');
     });
 
     it('returns 422 when required subscription fields are missing', function () {

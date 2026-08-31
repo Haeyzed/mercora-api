@@ -13,11 +13,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Shared ISO currency reference data for the landlord World API.
+ * Manages shared ISO currency reference data for the landlord World API.
  *
- * This is not tenant payment configuration.
+ * Domain: central-database currency catalog (nnjeim/world). This is not tenant payment configuration.
+ *
+ * Invariants:
+ * - Destroy is a soft delete; restore requires a trashed row.
+ * - Export uses the same filter and search as the index listing.
+ *
+ * Side effects: creates, updates, soft-deletes, restores, imports, and exports {@see Currency} records.
  */
 class CurrencyService
 {
@@ -96,6 +103,8 @@ class CurrencyService
 
     /**
      * Restore a soft-deleted world currency.
+     *
+     * @throws HttpException When the currency is not trashed (404).
      */
     public function restore(Currency $currency): Currency
     {

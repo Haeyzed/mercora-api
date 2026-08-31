@@ -10,7 +10,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
 /**
- * Hostnames attached to a landlord tenant.
+ * Manages hostnames attached to landlord tenants.
+ *
+ * Domain: Stancl Tenancy domain records scoped to a {@see Tenant}.
+ *
+ * Invariants:
+ * - Domains belong to exactly one tenant.
+ * - Deletion is permanent (no soft deletes).
+ *
+ * Side effects: creates and permanently deletes {@see Domain} records via the tenant relationship.
  */
 class DomainService
 {

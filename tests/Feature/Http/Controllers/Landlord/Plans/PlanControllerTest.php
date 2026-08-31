@@ -22,7 +22,7 @@ function planPayload(array $overrides = []): array
         'interval' => 'monthly',
         'trial_days' => 14,
         'status' => 'active',
-        'features' => ['Online store', 'Basic reports'],
+        'feature_highlights' => ['Online store', 'Basic reports'],
         ...$overrides,
     ];
 }
@@ -149,7 +149,7 @@ describe('store', function () {
             ->assertJsonPath('data.interval', 'monthly')
             ->assertJsonPath('data.trial_days', 14)
             ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('data.features.0', 'Online store');
+            ->assertJsonPath('data.feature_highlights.0', 'Online store');
 
         $this->assertDatabaseHas('plans', [
             'name' => 'Starter Plan',

@@ -13,9 +13,18 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Shared IANA timezone reference data for the landlord World API.
+ * Manages shared IANA timezone reference data for the landlord World API.
+ *
+ * Domain: central-database timezone catalog (nnjeim/world); not duplicated in tenant databases.
+ *
+ * Invariants:
+ * - Destroy is a soft delete; restore requires a trashed row.
+ * - Export uses the same filter and search as the index listing.
+ *
+ * Side effects: creates, updates, soft-deletes, restores, imports, and exports {@see Timezone} records.
  */
 class TimezoneService
 {
@@ -94,6 +103,8 @@ class TimezoneService
 
     /**
      * Restore a soft-deleted timezone.
+     *
+     * @throws HttpException When the timezone is not trashed (404).
      */
     public function restore(Timezone $timezone): Timezone
     {

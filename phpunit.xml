@@ -33,5 +33,6 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="CLAMAV_SKIP_VALIDATION" value="true"/>
+        <!-- <env name="RUN_TENANT_PROVISIONING_INTEGRATION" value="true"/> -->
     </php>
 </phpunit>

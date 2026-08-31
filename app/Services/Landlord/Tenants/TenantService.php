@@ -11,12 +11,26 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord tenant records, first hostname, and lifecycle.
+ * Manages landlord tenant records, first hostname, and lifecycle transitions.
+ *
+ * Domain: multi-tenant customers with isolated databases and domains.
+ *
+ * Invariants:
+ * - New tenants start as pending with one initial domain.
+ * - Lifecycle status, provisioned_at, and provision_error are not client-writable on update.
+ * - Activation requires successful provisioning per {@see TenantProvisioningVerifier}.
+ * - Soft delete does not drop the tenant database; force delete does.
+ *
+ * Side effects: creates tenants and domains, dispatches {@see ProvisionTenantJob},
+ * updates tenant status, and soft-deletes or force-deletes tenant records.
  */
 class TenantService
 {
+    public function __construct(private TenantProvisioningVerifier $provisioningVerifier) {}
+
     /**
      * Paginate tenants using model filter, search, and include scopes.
      *
@@ -61,7 +75,7 @@ class TenantService
     }
 
     /**
-     * Create a tenant and its first domain.
+     * Create a tenant and its first domain, then dispatch provisioning.
      *
      * @param  array{name: string, domain: string}  $data
      */
@@ -99,6 +113,8 @@ class TenantService
 
     /**
      * Dispatch provisioning for a pending or failed tenant.
+     *
+     * @throws ValidationException When the tenant is not in a provisionable status.
      */
     public function provision(Tenant $tenant): Tenant
     {
@@ -115,6 +131,8 @@ class TenantService
 
     /**
      * Activate a tenant that already completed provisioning.
+     *
+     * @throws ValidationException When the tenant cannot be activated or is not provisioned.
      */
     public function activate(Tenant $tenant): Tenant
     {
@@ -124,7 +142,7 @@ class TenantService
             ]);
         }
 
-        if ($tenant->provisioned_at === null) {
+        if ($tenant->provisioned_at === null || ! $this->provisioningVerifier->isProvisioned($tenant)) {
             throw ValidationException::withMessages([
                 'status' => 'The tenant has not been provisioned.',
             ]);
@@ -140,6 +158,8 @@ class TenantService
 
     /**
      * Suspend an active tenant.
+     *
+     * @throws ValidationException When the tenant cannot be suspended.
      */
     public function suspend(Tenant $tenant): Tenant
     {
@@ -158,6 +178,8 @@ class TenantService
 
     /**
      * Return a suspended tenant to active.
+     *
+     * @throws ValidationException When the tenant cannot be reactivated.
      */
     public function reactivate(Tenant $tenant): Tenant
     {
@@ -174,6 +196,9 @@ class TenantService
         return $tenant->refresh();
     }
 
+    /**
+     * Mark a tenant as provisioning. Called by the provisioning job at start.
+     */
     public function markProvisioning(Tenant $tenant): void
     {
         $tenant->update([
@@ -182,6 +207,9 @@ class TenantService
         ]);
     }
 
+    /**
+     * Mark provisioning complete and activate the tenant. Called by the provisioning job on success.
+     */
     public function completeProvisioning(Tenant $tenant): void
     {
         $tenant->update([
@@ -191,6 +219,9 @@ class TenantService
         ]);
     }
 
+    /**
+     * Record a provisioning failure. Called by the provisioning job on error.
+     */
     public function failProvisioning(Tenant $tenant, string $message): void
     {
         $tenant->update([
@@ -217,6 +248,8 @@ class TenantService
 
     /**
      * Restore a soft-deleted tenant.
+     *
+     * @throws HttpException When the tenant is not trashed (404).
      */
     public function restore(Tenant $tenant): Tenant
     {
@@ -247,6 +280,9 @@ class TenantService
         Tenant::onlyTrashed()->whereKey($ids)->restore();
     }
 
+    /**
+     * Transition the tenant to provisioning and dispatch the async provisioning job.
+     */
     private function dispatchProvisioning(Tenant $tenant): void
     {
         $tenant->update([

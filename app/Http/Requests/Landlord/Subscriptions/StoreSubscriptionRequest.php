@@ -41,6 +41,12 @@ class StoreSubscriptionRequest extends FormRequest
              */
             'plan_id' => ['required', 'integer', Rule::exists(Plan::class, 'id')->where('status', PlanStatus::Active->value)->whereNull('deleted_at')],
             /**
+             * Active plan price for the subscription.
+             *
+             * @example 1
+             */
+            'plan_price_id' => ['sometimes', 'integer', Rule::exists('plan_prices', 'id')->where('is_active', true)->whereNull('deleted_at')],
+            /**
              * When the subscription starts. Defaults to now.
              *
              * @example 2026-08-29T20:00:00Z

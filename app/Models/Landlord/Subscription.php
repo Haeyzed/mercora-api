@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['tenant_id', 'plan_id', 'price', 'currency', 'interval', 'status', 'is_current', 'starts_at', 'ends_at', 'trial_ends_at', 'canceled_at'])]
+#[Fillable(['tenant_id', 'plan_id', 'plan_price_id', 'plan_name', 'price', 'currency', 'interval', 'interval_count', 'status', 'is_current', 'starts_at', 'ends_at', 'trial_ends_at', 'canceled_at'])]
 class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
@@ -55,12 +55,17 @@ class Subscription extends Model
         return $this->belongsTo(Plan::class);
     }
 
+    public function planPrice(): BelongsTo
+    {
+        return $this->belongsTo(PlanPrice::class);
+    }
+
     /**
      * @return list<string>
      */
     protected function allowedIncludes(): array
     {
-        return ['tenant', 'plan', 'invoices'];
+        return ['tenant', 'plan', 'planPrice', 'invoices'];
     }
 
     public function invoices(): HasMany

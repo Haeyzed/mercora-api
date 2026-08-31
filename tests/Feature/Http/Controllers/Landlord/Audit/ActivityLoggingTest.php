@@ -5,6 +5,7 @@ use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Activity;
 use App\Models\Landlord\ApiKey;
 use App\Models\Landlord\Invoice;
+use App\Models\Landlord\Payment;
 use App\Models\Landlord\Setting;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
@@ -36,13 +37,18 @@ it('logs subscription cancellation', function () {
     expect(Activity::query()->forSubject($subscription)->where('event', 'updated')->exists())->toBeTrue();
 });
 
-it('logs invoice payment', function () {
+it('logs payment initiation for invoices', function () {
+    configureFlutterwaveForTests();
+    fakeFlutterwaveInitialize();
+
     $invoice = Invoice::factory()->create();
 
     $this->postJson("/api/landlord/invoices/{$invoice->id}/pay")
-        ->assertOk();
+        ->assertCreated();
 
-    expect(Activity::query()->forSubject($invoice)->where('event', 'updated')->exists())->toBeTrue();
+    $payment = Payment::query()->where('invoice_id', $invoice->id)->first();
+
+    expect(Activity::query()->forSubject($payment)->where('event', 'created')->exists())->toBeTrue();
 });
 
 it('does not store API key hashes in activity attributes', function () {

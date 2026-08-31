@@ -6,6 +6,7 @@ namespace App\Http\Requests\Landlord\Plans;
 
 use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\PlanStatus;
+use App\Http\Requests\Landlord\Plans\Concerns\MapsLegacyPlanFeatureHighlights;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 class StorePlanRequest extends FormRequest
 {
+    use MapsLegacyPlanFeatureHighlights;
+
     public function authorize(): bool
     {
         return true;
@@ -68,9 +71,14 @@ class StorePlanRequest extends FormRequest
              */
             'status' => ['sometimes', Rule::enum(PlanStatus::class)],
             /**
-             * Feature labels shown with the plan.
+             * Marketing bullet points shown with the plan.
              *
              * @example ["Online store", "Basic reports"]
+             */
+            'feature_highlights' => ['sometimes', 'nullable', 'array'],
+            'feature_highlights.*' => ['required', 'string', 'max:255'],
+            /**
+             * @deprecated Use feature_highlights. Accepted for backward compatibility.
              */
             'features' => ['sometimes', 'nullable', 'array'],
             'features.*' => ['required', 'string', 'max:255'],
@@ -90,6 +98,8 @@ class StorePlanRequest extends FormRequest
             'interval' => 'interval',
             'trial_days' => 'trial days',
             'status' => 'status',
+            'feature_highlights' => 'feature highlights',
+            'feature_highlights.*' => 'feature highlight',
             'features' => 'features',
             'features.*' => 'feature',
         ];

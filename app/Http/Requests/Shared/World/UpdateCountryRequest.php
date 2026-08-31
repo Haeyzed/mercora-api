@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Shared\World;
 
+use App\Http\Requests\Shared\World\Concerns\AuthorizesWorldManagement;
 use App\Models\Shared\Country;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,9 +14,11 @@ use Illuminate\Validation\Rule;
  */
 class UpdateCountryRequest extends FormRequest
 {
+    use AuthorizesWorldManagement;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->authorizeWorldManagement();
     }
 
     /**

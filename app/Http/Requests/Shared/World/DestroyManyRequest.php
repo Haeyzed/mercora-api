@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Shared\World;
 
+use App\Http\Requests\Shared\World\Concerns\AuthorizesWorldManagement;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,7 @@ use Illuminate\Validation\Rule;
  */
 class DestroyManyRequest extends FormRequest
 {
+    use AuthorizesWorldManagement;
     use ResolvesWorldModel;
 
     public function authorize(): bool

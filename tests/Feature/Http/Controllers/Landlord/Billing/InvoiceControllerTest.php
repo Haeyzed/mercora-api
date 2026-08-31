@@ -226,19 +226,23 @@ describe('update', function () {
 });
 
 describe('pay', function () {
-    it('marks an open invoice as paid', function () {
-        $this->travelTo('2026-08-29 20:00:00');
+    beforeEach(function (): void {
+        configureFlutterwaveForTests();
+    });
+
+    it('initializes payment for an open invoice', function () {
+        fakeFlutterwaveInitialize();
 
         $invoice = Invoice::factory()->create();
 
         $this->postJson("/api/landlord/invoices/{$invoice->id}/pay")
-            ->assertOk()
-            ->assertJsonPath('data.status', 'paid')
-            ->assertJsonPath('data.paid_at', '2026-08-29T20:00:00.000000Z');
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.checkout_url', 'https://checkout.test/pay');
 
-        $this->assertDatabaseHas('invoices', [
-            'id' => $invoice->id,
-            'status' => InvoiceStatus::Paid->value,
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoice->id,
+            'status' => 'pending',
         ]);
     });
 

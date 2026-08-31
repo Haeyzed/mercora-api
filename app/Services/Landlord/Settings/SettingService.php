@@ -9,9 +9,19 @@ use App\Models\Landlord\Setting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord platform settings catalog.
+ * Manages landlord platform settings with typed values and cache-backed reads.
+ *
+ * Domain: key/value configuration for the landlord application.
+ *
+ * Invariants:
+ * - Setting keys are immutable after creation.
+ * - Values are encoded/decoded according to {@see SettingType}.
+ * - Cached reads use the key `landlord.setting.{key}` with a one-hour TTL.
+ *
+ * Side effects: creates, updates, soft-deletes, and restores {@see Setting} records; invalidates cache on writes.
  */
 class SettingService
 {
@@ -108,6 +118,8 @@ class SettingService
 
     /**
      * Restore a soft-deleted setting.
+     *
+     * @throws HttpException When the setting is not trashed (404).
      */
     public function restore(Setting $setting): Setting
     {
@@ -141,6 +153,11 @@ class SettingService
         Setting::query()->whereKey($ids)->get()->each(fn (Setting $setting) => $this->forgetCache($setting));
     }
 
+    /**
+     * Read a decoded setting value by key, with optional default when missing.
+     *
+     * Results are cached for one hour.
+     */
     public function value(string $key, mixed $default = null): mixed
     {
         return Cache::remember('landlord.setting.'.$key, now()->addHour(), function () use ($key, $default): mixed {
@@ -150,11 +167,17 @@ class SettingService
         });
     }
 
+    /**
+     * Invalidate the cache entry for a setting key.
+     */
     private function forgetCache(Setting $setting): void
     {
         Cache::forget('landlord.setting.'.$setting->key);
     }
 
+    /**
+     * Normalize a setting type to the {@see SettingType} enum.
+     */
     private function typeFrom(SettingType|string $type): SettingType
     {
         return $type instanceof SettingType ? $type : SettingType::from($type);

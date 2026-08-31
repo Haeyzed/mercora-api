@@ -29,7 +29,8 @@ class PlanResource extends JsonResource
             'interval' => $this->interval,
             'trial_days' => $this->trial_days,
             'status' => $this->status,
-            'features' => $this->features ?? [],
+            'feature_highlights' => $this->feature_highlights ?? [],
+            'features' => FeatureResource::collection($this->whenLoaded('features')),
             'subscriptions' => SubscriptionResource::collection($this->whenLoaded('subscriptions')),
         ];
     }

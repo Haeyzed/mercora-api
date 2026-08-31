@@ -14,12 +14,20 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-#[Fillable(['name', 'slug', 'description', 'price', 'currency', 'interval', 'trial_days', 'status', 'features'])]
+/**
+ * Landlord subscription catalog plan.
+ *
+ * Billing amounts are defined on related {@see PlanPrice} records. Entitlement
+ * capabilities are attached through the {@see self::features()} relationship.
+ * Marketing bullet points are stored in {@see self::$feature_highlights}.
+ */
+#[Fillable(['name', 'slug', 'description', 'price', 'currency', 'interval', 'trial_days', 'status', 'feature_highlights'])]
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
@@ -56,7 +64,7 @@ class Plan extends Model
             'trial_days' => 'integer',
             'interval' => PlanInterval::class,
             'status' => PlanStatus::class,
-            'features' => 'array',
+            'feature_highlights' => 'array',
         ];
     }
 
@@ -65,12 +73,29 @@ class Plan extends Model
      */
     protected function allowedIncludes(): array
     {
-        return ['subscriptions'];
+        return ['subscriptions', 'prices', 'features'];
     }
 
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function prices(): HasMany
+    {
+        return $this->hasMany(PlanPrice::class);
+    }
+
+    /**
+     * Entitlement features attached to this plan.
+     *
+     * @return BelongsToMany<Feature, $this>
+     */
+    public function features(): BelongsToMany
+    {
+        return $this->belongsToMany(Feature::class, 'plan_features')
+            ->withPivot('value')
+            ->withTimestamps();
     }
 
     /**

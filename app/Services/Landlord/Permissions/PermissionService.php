@@ -8,11 +8,20 @@ use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
 
 /**
- * Seeded landlord permission catalog. Permissions are not created through the API.
+ * Exposes the seeded landlord permission catalog.
+ *
+ * Domain: Spatie Permission definitions for the landlord guard.
+ *
+ * Invariants:
+ * - Permissions are seeded and read-only through the API; they are not created or mutated here.
+ *
+ * Side effects: none (read-only queries).
  */
 class PermissionService
 {
     /**
+     * Return all permissions ordered by name.
+     *
      * @return Collection<int, Permission>
      */
     public function all(): Collection

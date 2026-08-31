@@ -10,7 +10,15 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
- * Landlord Sanctum token authentication.
+ * Authenticates landlord users via Laravel Sanctum personal access tokens.
+ *
+ * Domain: landlord panel login and session teardown.
+ *
+ * Invariants:
+ * - Only active users with valid credentials receive a token.
+ * - Logout revokes only the token used for the current request.
+ *
+ * Side effects: creates and deletes Sanctum {@see PersonalAccessToken} records.
  */
 class AuthService
 {
@@ -19,6 +27,8 @@ class AuthService
      *
      * @param  array{email: string, password: string, device_name?: string}  $credentials
      * @return array{user: User, token: string}
+     *
+     * @throws ValidationException When credentials are invalid or the user is inactive.
      */
     public function login(array $credentials): array
     {
@@ -38,6 +48,8 @@ class AuthService
 
     /**
      * Revoke the token used for the current request.
+     *
+     * No-op when the authenticated guard is not backed by a {@see PersonalAccessToken}.
      */
     public function logout(User $user): void
     {

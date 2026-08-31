@@ -11,9 +11,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord API key ledger. Keys are hashed; plaintext is returned only on create.
+ * Manages landlord API keys for programmatic access.
+ *
+ * Domain: landlord authentication credentials scoped to a user.
+ *
+ * Invariants:
+ * - Only the SHA-256 hash of a key is persisted; plaintext is exposed once on creation via {@see ApiKey::$plainTextToken}.
+ * - Revoked or inactive keys cannot be updated.
+ * - Token prefixes are unique across soft-deleted rows.
+ *
+ * Side effects: creates, updates, revokes, soft-deletes, and restores {@see ApiKey} records.
  */
 class ApiKeyService
 {
@@ -89,6 +99,8 @@ class ApiKeyService
      * Update name or expiry on an active API key.
      *
      * @param  array{name?: string, expires_at?: string|null}  $data
+     *
+     * @throws ValidationException When the key is not active.
      */
     public function update(ApiKey $apiKey, array $data): ApiKey
     {
@@ -107,6 +119,8 @@ class ApiKeyService
 
     /**
      * Revoke an active API key.
+     *
+     * @throws ValidationException When the key is not active.
      */
     public function revoke(ApiKey $apiKey): ApiKey
     {
@@ -130,6 +144,8 @@ class ApiKeyService
 
     /**
      * Restore a soft-deleted API key.
+     *
+     * @throws HttpException When the key is not trashed (404).
      */
     public function restore(ApiKey $apiKey): ApiKey
     {
@@ -161,6 +177,8 @@ class ApiKeyService
     }
 
     /**
+     * Generate a unique plaintext token and its SHA-256 hash.
+     *
      * @return array{0: string, 1: string}
      */
     private function nextToken(): array
@@ -173,6 +191,11 @@ class ApiKeyService
         return [$token, $hash];
     }
 
+    /**
+     * Ensure the API key is in active status before mutating.
+     *
+     * @throws ValidationException When the key is not active.
+     */
     private function ensureActive(ApiKey $apiKey): void
     {
         if ($apiKey->status === ApiKeyStatus::Active) {

@@ -14,9 +14,19 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Shared state/region reference data for the landlord World API.
+ * Manages shared state/region reference data for the landlord World API.
+ *
+ * Domain: central-database geographic reference data (nnjeim/world); not duplicated in tenant databases.
+ *
+ * Invariants:
+ * - country_code is derived from country_id when omitted on write.
+ * - Destroy is a soft delete; restore requires a trashed row.
+ * - Export uses the same filter and search as the index listing.
+ *
+ * Side effects: creates, updates, soft-deletes, restores, imports, and exports {@see State} records.
  */
 class StateService
 {
@@ -95,6 +105,8 @@ class StateService
 
     /**
      * Restore a soft-deleted state.
+     *
+     * @throws HttpException When the state is not trashed (404).
      */
     public function restore(State $state): State
     {
@@ -150,6 +162,8 @@ class StateService
     }
 
     /**
+     * Derive country_code from country_id when not supplied.
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */

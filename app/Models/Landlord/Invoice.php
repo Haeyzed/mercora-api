@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['tenant_id', 'subscription_id', 'number', 'status', 'amount', 'currency', 'issued_at', 'period_starts_at', 'period_ends_at', 'due_at', 'paid_at', 'voided_at', 'notes'])]
+#[Fillable(['tenant_id', 'subscription_id', 'payment_id', 'number', 'status', 'amount', 'currency', 'issued_at', 'period_starts_at', 'period_ends_at', 'due_at', 'paid_at', 'voided_at', 'notes'])]
 class Invoice extends Model
 {
     /** @use HasFactory<InvoiceFactory> */
@@ -54,12 +54,17 @@ class Invoice extends Model
         return $this->belongsTo(Subscription::class);
     }
 
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
     /**
      * @return list<string>
      */
     protected function allowedIncludes(): array
     {
-        return ['tenant', 'subscription'];
+        return ['tenant', 'subscription', 'payment'];
     }
 
     /**

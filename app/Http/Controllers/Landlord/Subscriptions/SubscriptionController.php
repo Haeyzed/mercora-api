@@ -130,7 +130,7 @@ class SubscriptionController extends Controller
         $this->authorize('renew', $subscription);
 
         return $this->subscriptionService
-            ->renew($subscription)
+            ->requestRenewal($subscription)
             ->toResource(SubscriptionResource::class);
     }
 

@@ -10,9 +10,18 @@ use App\Models\Landlord\Notice;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord in-app and mail notice ledger.
+ * Manages landlord in-app and mail notice records.
+ *
+ * Domain: per-user notification ledger for the landlord panel.
+ *
+ * Invariants:
+ * - New notices are created as unread; mail is not sent from this service.
+ * - Only unread notices can be updated or marked read.
+ *
+ * Side effects: creates, updates, soft-deletes, and restores {@see Notice} records.
  */
 class NoticeService
 {
@@ -80,6 +89,8 @@ class NoticeService
      * Update title or body on an unread notice.
      *
      * @param  array{title?: string, body?: string}  $data
+     *
+     * @throws ValidationException When the notice is not unread.
      */
     public function update(Notice $notice, array $data): Notice
     {
@@ -92,6 +103,8 @@ class NoticeService
 
     /**
      * Mark an unread notice as read.
+     *
+     * @throws ValidationException When the notice is not unread.
      */
     public function read(Notice $notice): Notice
     {
@@ -115,6 +128,8 @@ class NoticeService
 
     /**
      * Restore a soft-deleted notice.
+     *
+     * @throws HttpException When the notice is not trashed (404).
      */
     public function restore(Notice $notice): Notice
     {
@@ -145,6 +160,11 @@ class NoticeService
         Notice::onlyTrashed()->whereKey($ids)->restore();
     }
 
+    /**
+     * Ensure the notice is unread before mutating.
+     *
+     * @throws ValidationException When the notice is not unread.
+     */
     private function ensureUnread(Notice $notice): void
     {
         if ($notice->status === NoticeStatus::Unread) {

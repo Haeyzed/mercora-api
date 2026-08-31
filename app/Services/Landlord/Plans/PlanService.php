@@ -9,9 +9,18 @@ use App\Enums\Landlord\PlanStatus;
 use App\Models\Landlord\Plan;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
- * Landlord subscription plan catalog.
+ * Manages the landlord subscription plan catalog.
+ *
+ * Domain: sellable plans with pricing, intervals, and marketing feature highlights.
+ *
+ * Invariants:
+ * - Plans are soft-deletable; restore requires a trashed row.
+ * - Plan mutations do not automatically change existing subscription snapshots.
+ *
+ * Side effects: creates, updates, soft-deletes, and restores {@see Plan} records.
  */
 class PlanService
 {
@@ -61,7 +70,7 @@ class PlanService
     /**
      * Create a plan.
      *
-     * @param  array{name: string, price: int, currency: string, interval: PlanInterval|string, description?: string|null, trial_days?: int, status?: PlanStatus|string, features?: list<string>|null}  $data
+     * @param  array{name: string, price: int, currency: string, interval: PlanInterval|string, description?: string|null, trial_days?: int, status?: PlanStatus|string, feature_highlights?: list<string>|null}  $data
      */
     public function store(array $data): Plan
     {
@@ -90,6 +99,8 @@ class PlanService
 
     /**
      * Restore a soft-deleted plan.
+     *
+     * @throws HttpException When the plan is not trashed (404).
      */
     public function restore(Plan $plan): Plan
     {

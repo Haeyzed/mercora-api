@@ -27,7 +27,7 @@ class PlanFactory extends Factory
             'interval' => PlanInterval::Monthly,
             'trial_days' => 0,
             'status' => PlanStatus::Draft,
-            'features' => ['Online store', 'Basic reports'],
+            'feature_highlights' => ['Online store', 'Basic reports'],
         ];
     }
 
@@ -35,7 +35,16 @@ class PlanFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'status' => PlanStatus::Active,
-        ]);
+        ])->afterCreating(function (Plan $plan): void {
+            if (! $plan->prices()->exists()) {
+                PlanPriceFactory::new()->for($plan)->create([
+                    'amount' => $plan->price,
+                    'currency' => $plan->currency,
+                    'interval' => $plan->interval,
+                    'trial_days' => $plan->trial_days,
+                ]);
+            }
+        });
     }
 
     public function archived(): static

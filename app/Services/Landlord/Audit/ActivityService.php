@@ -9,7 +9,15 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
 /**
- * Landlord activity log. Clients can list, inspect, and purge rows; they cannot invent them.
+ * Read and purge landlord activity log entries.
+ *
+ * Domain: audit trail produced by Spatie Activity Log and manual logging.
+ *
+ * Invariants:
+ * - Activities are append-only from the API perspective; clients cannot create or edit rows.
+ * - Deletion is permanent (no soft deletes).
+ *
+ * Side effects: permanently deletes {@see Activity} records when requested.
  */
 class ActivityService
 {
