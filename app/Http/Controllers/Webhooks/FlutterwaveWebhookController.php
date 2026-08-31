@@ -12,6 +12,11 @@ use Illuminate\Http\Response;
 
 class FlutterwaveWebhookController extends Controller
 {
+    /**
+     * Receive Flutterwave payment webhooks.
+     *
+     * @unauthenticated
+     */
     public function __invoke(Request $request): Response
     {
         ProcessPaymentWebhookJob::dispatch(new WebhookPayload(

@@ -50,7 +50,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => '',
+        'description' => 'Authenticate via `POST /api/landlord/auth/login`, then use the returned token as `Authorization: Bearer {token}` on protected endpoints.',
     ],
 
     'ui' => [
@@ -157,26 +157,14 @@ return [
 
     /*
      * Automatically document API security (OpenAPI `security` / `securitySchemes`) based on route
-     * middleware.
-     *
-     * Disabled by default. Uncomment the line below to enable `MiddlewareAuthSecurityStrategy`.
-     * When at least one documented route uses middleware matching the configured patterns (by default
-     * `auth` and `auth:*`), bearer auth is applied globally. Routes without matching middleware are
-     * marked as public (`security: []`).
-     *
-     * Set to `null` explicitly to disable. If you already configure security manually via
-     * `afterOpenApiGenerated` / `extendOpenApi`, keep this disabled to avoid duplicate schemes.
-     *
-     * Customize with a class-string or [class, options]:
-     *
-     * 'security_strategy' => [
-     *     \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-     *     [
-     *         'middleware' => ['auth', 'auth:*'],
-     *         'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer'),
-     *     ],
-     * ],
+     * middleware. Routes using `auth:sanctum` require a Bearer token; public routes (login, webhooks)
+     * are documented without auth.
      */
-    // 'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-    'security_strategy' => null,
+    'security_strategy' => [
+        \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
+        [
+            'middleware' => ['auth', 'auth:*'],
+            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer', 'Sanctum'),
+        ],
+    ],
 ];

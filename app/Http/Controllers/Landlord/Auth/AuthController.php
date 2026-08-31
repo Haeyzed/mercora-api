@@ -22,6 +22,8 @@ class AuthController extends Controller
 
     /**
      * Log in a landlord user and issue an API token.
+     *
+     * @unauthenticated
      */
     #[Endpoint(operationId: 'loginLandlord', title: 'Log in')]
     public function login(LoginRequest $request): LoginResource
