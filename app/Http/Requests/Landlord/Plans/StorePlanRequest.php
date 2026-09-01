@@ -41,29 +41,39 @@ class StorePlanRequest extends FormRequest
              */
             'description' => ['sometimes', 'nullable', 'string'],
             /**
+             * Initial billable price for the plan.
+             */
+            'price' => ['required', 'array'],
+            /**
              * Price in the smallest currency unit (cents).
              *
              * @example 2900
              */
-            'price' => ['required', 'integer', 'min:0'],
+            'price.amount' => ['required', 'integer', 'min:0'],
             /**
              * ISO 4217 currency code. World currency is ISO reference only.
              *
              * @example USD
              */
-            'currency' => ['required', 'string', 'size:3', 'alpha', 'uppercase'],
+            'price.currency' => ['required', 'string', 'size:3', 'alpha', 'uppercase'],
             /**
              * Billing interval.
              *
              * @example monthly
              */
-            'interval' => ['required', Rule::enum(PlanInterval::class)],
+            'price.interval' => ['required', Rule::enum(PlanInterval::class)],
+            /**
+             * Number of billing intervals per charge.
+             *
+             * @example 1
+             */
+            'price.interval_count' => ['sometimes', 'integer', 'min:1', 'max:36'],
             /**
              * Number of trial days before billing starts.
              *
              * @example 14
              */
-            'trial_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
+            'price.trial_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
             /**
              * Plan lifecycle status. Defaults to draft when omitted.
              *
@@ -94,9 +104,11 @@ class StorePlanRequest extends FormRequest
             'name' => 'name',
             'description' => 'description',
             'price' => 'price',
-            'currency' => 'currency',
-            'interval' => 'interval',
-            'trial_days' => 'trial days',
+            'price.amount' => 'price amount',
+            'price.currency' => 'price currency',
+            'price.interval' => 'price interval',
+            'price.interval_count' => 'price interval count',
+            'price.trial_days' => 'price trial days',
             'status' => 'status',
             'feature_highlights' => 'feature highlights',
             'feature_highlights.*' => 'feature highlight',

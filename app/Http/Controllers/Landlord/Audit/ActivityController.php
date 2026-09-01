@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Landlord\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Landlord\Audit\DestroyManyRequest;
 use App\Http\Resources\Landlord\Audit\ActivityResource;
-use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\Activity;
 use App\Services\Landlord\Audit\ActivityService;
 use Dedoc\Scramble\Attributes\Endpoint;
@@ -42,24 +41,6 @@ class ActivityController extends Controller
         $this->authorize('viewAny', Activity::class);
 
         return ActivityResource::collection($this->activityService->paginate($request));
-    }
-
-    /**
-     * List activity options for selects.
-     *
-     * @return AnonymousResourceCollection<int, OptionResource>
-     */
-    #[Endpoint(operationId: 'listLandlordActivityOptions', title: 'List activity options')]
-    #[QueryParameter('filter[event]', description: 'Exact activity event.', type: 'string')]
-    #[QueryParameter('filter[log_name]', description: 'Exact log name.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match on the activity description.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function options(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', Activity::class);
-
-        return OptionResource::collection($this->activityService->options($request));
     }
 
     /**

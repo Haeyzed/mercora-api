@@ -22,29 +22,34 @@ class PlanFactory extends Factory
         return [
             'name' => fake()->unique()->words(2, true).' Plan',
             'description' => fake()->sentence(),
-            'price' => 2900,
-            'currency' => 'USD',
-            'interval' => PlanInterval::Monthly,
-            'trial_days' => 0,
             'status' => PlanStatus::Draft,
             'feature_highlights' => ['Online store', 'Basic reports'],
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Plan $plan): void {
+            if ($plan->prices()->exists()) {
+                return;
+            }
+
+            PlanPriceFactory::new()->for($plan)->create();
+        });
+    }
+
+    public function withoutPrices(): static
+    {
+        return $this->afterCreating(function (Plan $plan): void {
+            $plan->prices()->delete();
+        });
     }
 
     public function active(): static
     {
         return $this->state(fn (array $attributes): array => [
             'status' => PlanStatus::Active,
-        ])->afterCreating(function (Plan $plan): void {
-            if (! $plan->prices()->exists()) {
-                PlanPriceFactory::new()->for($plan)->create([
-                    'amount' => $plan->price,
-                    'currency' => $plan->currency,
-                    'interval' => $plan->interval,
-                    'trial_days' => $plan->trial_days,
-                ]);
-            }
-        });
+        ]);
     }
 
     public function archived(): static
@@ -56,8 +61,24 @@ class PlanFactory extends Factory
 
     public function yearly(): static
     {
-        return $this->state(fn (array $attributes): array => [
-            'interval' => PlanInterval::Yearly,
-        ]);
+        return $this->withPrice(['interval' => PlanInterval::Yearly]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    public function withPrice(array $overrides = []): static
+    {
+        return $this->afterCreating(function (Plan $plan) use ($overrides): void {
+            $price = $plan->prices()->first();
+
+            if ($price === null) {
+                PlanPriceFactory::new()->for($plan)->create($overrides);
+
+                return;
+            }
+
+            $price->update($overrides);
+        });
     }
 }

@@ -24,6 +24,11 @@ enum Permission: string
     case PlansUpdate = 'plans.update';
     case PlansDelete = 'plans.delete';
 
+    case FeaturesView = 'features.view';
+    case FeaturesCreate = 'features.create';
+    case FeaturesUpdate = 'features.update';
+    case FeaturesDelete = 'features.delete';
+
     case SubscriptionsView = 'subscriptions.view';
     case SubscriptionsCreate = 'subscriptions.create';
     case SubscriptionsChangePlan = 'subscriptions.change_plan';
@@ -37,6 +42,9 @@ enum Permission: string
     case InvoicesPay = 'invoices.pay';
     case InvoicesVoid = 'invoices.void';
     case InvoicesDelete = 'invoices.delete';
+
+    case PaymentsView = 'payments.view';
+    case PaymentsVerify = 'payments.verify';
 
     case ApiKeysView = 'api_keys.view';
     case ApiKeysCreate = 'api_keys.create';

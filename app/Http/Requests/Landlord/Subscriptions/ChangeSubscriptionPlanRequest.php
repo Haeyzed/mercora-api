@@ -6,13 +6,14 @@ namespace App\Http\Requests\Landlord\Subscriptions;
 
 use App\Enums\Landlord\PlanStatus;
 use App\Models\Landlord\Plan;
+use App\Models\Landlord\PlanPrice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Validate a plan change on a landlord subscription.
  */
-class UpdateSubscriptionRequest extends FormRequest
+class ChangeSubscriptionPlanRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -25,12 +26,8 @@ class UpdateSubscriptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            /**
-             * Active catalog plan to switch to.
-             *
-             * @example 2
-             */
             'plan_id' => ['required', 'integer', Rule::exists(Plan::class, 'id')->where('status', PlanStatus::Active->value)->whereNull('deleted_at')],
+            'plan_price_id' => ['sometimes', 'integer', Rule::exists(PlanPrice::class, 'id')->where('plan_id', $this->input('plan_id'))->where('is_active', true)->whereNull('deleted_at')],
         ];
     }
 
@@ -41,6 +38,7 @@ class UpdateSubscriptionRequest extends FormRequest
     {
         return [
             'plan_id' => 'plan',
+            'plan_price_id' => 'plan price',
         ];
     }
 }

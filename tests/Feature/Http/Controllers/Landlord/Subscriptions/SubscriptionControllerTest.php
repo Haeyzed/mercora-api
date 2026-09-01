@@ -96,31 +96,17 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns subscription options as label and value pairs', function () {
-        $tenant = Tenant::factory()->create(['name' => 'Acme Stores']);
-        $plan = Plan::factory()->active()->create(['name' => 'Starter Plan']);
-        $subscription = Subscription::factory()->for($tenant)->for($plan)->create();
-
-        $this->getJson('/api/landlord/subscriptions/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'Acme Stores — Starter Plan')
-            ->assertJsonPath('data.0.value', $subscription->id);
-    });
-});
-
 describe('store', function () {
     it('subscribes a tenant to an active plan and snapshots the catalog terms', function () {
         $this->travelTo('2026-08-29 20:00:00');
 
         $tenant = Tenant::factory()->create(['name' => 'Acme Stores']);
-        $plan = Plan::factory()->active()->create([
-            'name' => 'Starter Plan',
-            'price' => 2900,
+        $plan = Plan::factory()->active()->withPrice([
+            'amount' => 2900,
             'currency' => 'USD',
             'interval' => PlanInterval::Monthly,
             'trial_days' => 0,
-        ]);
+        ])->create(['name' => 'Starter Plan']);
 
         $this->postJson('/api/landlord/subscriptions', [
             'tenant_id' => $tenant->id,
@@ -151,10 +137,10 @@ describe('store', function () {
         $this->travelTo('2026-08-29 20:00:00');
 
         $tenant = Tenant::factory()->create();
-        $plan = Plan::factory()->active()->create([
+        $plan = Plan::factory()->active()->withPrice([
             'trial_days' => 14,
             'interval' => PlanInterval::Monthly,
-        ]);
+        ])->create();
 
         $this->postJson('/api/landlord/subscriptions', [
             'tenant_id' => $tenant->id,
@@ -168,10 +154,10 @@ describe('store', function () {
 
     it('does not persist client-supplied price or status', function () {
         $tenant = Tenant::factory()->create();
-        $plan = Plan::factory()->active()->create([
-            'price' => 2900,
+        $plan = Plan::factory()->active()->withPrice([
+            'amount' => 2900,
             'trial_days' => 0,
-        ]);
+        ])->create();
 
         $this->postJson('/api/landlord/subscriptions', [
             'tenant_id' => $tenant->id,
@@ -255,21 +241,20 @@ describe('show', function () {
     });
 });
 
-describe('update', function () {
+describe('changePlan', function () {
     it('changes the plan and re-snapshots the catalog terms', function () {
         $subscription = Subscription::factory()->create([
             'price' => 2900,
             'currency' => 'USD',
         ]);
-        $plan = Plan::factory()->active()->create([
-            'name' => 'Growth Plan',
-            'price' => 7900,
+        $plan = Plan::factory()->active()->withPrice([
+            'amount' => 7900,
             'currency' => 'NGN',
             'interval' => PlanInterval::Yearly,
             'trial_days' => 0,
-        ]);
+        ])->create(['name' => 'Growth Plan']);
 
-        $this->putJson("/api/landlord/subscriptions/{$subscription->id}", [
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/change-plan", [
             'plan_id' => $plan->id,
         ])
             ->assertOk()
@@ -283,7 +268,7 @@ describe('update', function () {
         $subscription = Subscription::factory()->canceled()->create();
         $plan = Plan::factory()->active()->create();
 
-        $this->putJson("/api/landlord/subscriptions/{$subscription->id}", [
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/change-plan", [
             'plan_id' => $plan->id,
         ])
             ->assertUnprocessable()
@@ -318,38 +303,20 @@ describe('cancel', function () {
 });
 
 describe('destroy', function () {
-    it('soft deletes a subscription', function () {
+    it('does not expose a delete endpoint', function () {
         $subscription = Subscription::factory()->create();
 
         $this->deleteJson("/api/landlord/subscriptions/{$subscription->id}")
-            ->assertNoContent();
+            ->assertMethodNotAllowed();
 
-        $this->assertSoftDeleted($subscription);
-    });
-
-    it('returns 404 when showing a soft-deleted subscription', function () {
-        $subscription = Subscription::factory()->create();
-        $subscription->delete();
-
-        $this->getJson("/api/landlord/subscriptions/{$subscription->id}")
-            ->assertNotFound();
+        $this->assertNotSoftDeleted($subscription);
     });
 });
 
 describe('restore', function () {
-    it('restores a soft-deleted subscription', function () {
+    it('does not expose a restore endpoint', function () {
         $subscription = Subscription::factory()->create();
         $subscription->delete();
-
-        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/restore")
-            ->assertOk()
-            ->assertJsonPath('data.id', $subscription->id);
-
-        $this->assertNotSoftDeleted($subscription);
-    });
-
-    it('returns 404 when the subscription is not soft deleted', function () {
-        $subscription = Subscription::factory()->create();
 
         $this->postJson("/api/landlord/subscriptions/{$subscription->id}/restore")
             ->assertNotFound();
@@ -357,47 +324,26 @@ describe('restore', function () {
 });
 
 describe('destroyMany', function () {
-    it('soft deletes the given subscriptions', function () {
+    it('does not expose a bulk delete endpoint', function () {
         $first = Subscription::factory()->create();
         $second = Subscription::factory()->create();
 
         $this->deleteJson('/api/landlord/subscriptions/destroy-many', [
             'ids' => [$first->id, $second->id],
-        ])->assertNoContent();
-
-        $this->assertSoftDeleted($first);
-        $this->assertSoftDeleted($second);
-    });
-
-    it('returns 422 when ids are missing', function () {
-        $this->deleteJson('/api/landlord/subscriptions/destroy-many', [])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['ids']);
-    });
-});
-
-describe('restoreMany', function () {
-    it('restores the given soft-deleted subscriptions', function () {
-        $first = Subscription::factory()->create();
-        $second = Subscription::factory()->create();
-        $first->delete();
-        $second->delete();
-
-        $this->postJson('/api/landlord/subscriptions/restore-many', [
-            'ids' => [$first->id, $second->id],
-        ])->assertNoContent();
+        ])->assertMethodNotAllowed();
 
         $this->assertNotSoftDeleted($first);
         $this->assertNotSoftDeleted($second);
     });
+});
 
-    it('returns 422 when an id is not soft deleted', function () {
+describe('restoreMany', function () {
+    it('does not expose a bulk restore endpoint', function () {
         $subscription = Subscription::factory()->create();
+        $subscription->delete();
 
         $this->postJson('/api/landlord/subscriptions/restore-many', [
             'ids' => [$subscription->id],
-        ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['ids.0']);
+        ])->assertMethodNotAllowed();
     });
 });

@@ -45,7 +45,7 @@ class StoreSubscriptionRequest extends FormRequest
              *
              * @example 1
              */
-            'plan_price_id' => ['sometimes', 'integer', Rule::exists('plan_prices', 'id')->where('is_active', true)->whereNull('deleted_at')],
+            'plan_price_id' => ['sometimes', 'integer', Rule::exists('plan_prices', 'id')->where('plan_id', $this->input('plan_id'))->where('is_active', true)->whereNull('deleted_at')],
             /**
              * When the subscription starts. Defaults to now.
              *

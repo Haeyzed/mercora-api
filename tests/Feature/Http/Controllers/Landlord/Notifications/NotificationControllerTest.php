@@ -108,17 +108,6 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns notice options as label and value pairs', function () {
-        $notice = Notice::factory()->create(['title' => 'Invoice past due']);
-
-        $this->getJson('/api/landlord/notifications/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'Invoice past due')
-            ->assertJsonPath('data.0.value', $notice->id);
-    });
-});
-
 describe('store', function () {
     it('records an unread in-app notice', function () {
         $user = User::factory()->create(['name' => 'Ada Lovelace']);
@@ -258,6 +247,20 @@ describe('read', function () {
         $this->postJson("/api/landlord/notifications/{$notice->id}/read")
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['status']);
+    });
+});
+
+describe('readAll', function () {
+    it('marks all unread notices for the authenticated user as read', function () {
+        $user = auth()->user();
+        Notice::factory()->count(2)->for($user)->create();
+        Notice::factory()->read()->for($user)->create();
+
+        $this->postJson('/api/landlord/notifications/read-all')
+            ->assertOk()
+            ->assertJsonPath('read', 2);
+
+        expect(Notice::query()->where('user_id', $user->id)->where('status', NoticeStatus::Unread)->count())->toBe(0);
     });
 });
 

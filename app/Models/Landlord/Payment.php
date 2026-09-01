@@ -10,6 +10,8 @@ use App\Models\Concerns\LogsLandlordActivity;
 use Database\Factories\Landlord\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -106,5 +108,28 @@ class Payment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    /**
+     * @param  array<string, mixed>|mixed  $filters
+     */
+    #[Scope]
+    protected function filter(Builder $query, mixed $filters): void
+    {
+        if (! is_array($filters)) {
+            return;
+        }
+
+        $query
+            ->when(filled($filters['tenant_id'] ?? null), fn (Builder $query): Builder => $query->where('tenant_id', $filters['tenant_id']))
+            ->when(filled($filters['invoice_id'] ?? null), fn (Builder $query): Builder => $query->where('invoice_id', $filters['invoice_id']))
+            ->when(filled($filters['status'] ?? null), fn (Builder $query): Builder => $query->where('status', $filters['status']))
+            ->when(filled($filters['provider'] ?? null), fn (Builder $query): Builder => $query->where('provider', $filters['provider']));
+    }
+
+    #[Scope]
+    protected function ordered(Builder $query): void
+    {
+        $query->orderByDesc('id');
     }
 }

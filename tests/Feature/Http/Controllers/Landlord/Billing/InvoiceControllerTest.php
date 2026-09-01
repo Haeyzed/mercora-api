@@ -105,17 +105,6 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns invoice options as label and value pairs', function () {
-        $invoice = Invoice::factory()->create(['number' => 'INV-20260829-ABC123']);
-
-        $this->getJson('/api/landlord/invoices/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'INV-20260829-ABC123')
-            ->assertJsonPath('data.0.value', $invoice->id);
-    });
-});
-
 describe('store', function () {
     it('issues an open invoice from the subscription terms', function () {
         $this->travelTo('2026-08-29 20:00:00');
@@ -282,38 +271,20 @@ describe('void', function () {
 });
 
 describe('destroy', function () {
-    it('soft deletes an invoice', function () {
+    it('does not expose a delete endpoint', function () {
         $invoice = Invoice::factory()->create();
 
         $this->deleteJson("/api/landlord/invoices/{$invoice->id}")
-            ->assertNoContent();
+            ->assertMethodNotAllowed();
 
-        $this->assertSoftDeleted($invoice);
-    });
-
-    it('returns 404 when showing a soft-deleted invoice', function () {
-        $invoice = Invoice::factory()->create();
-        $invoice->delete();
-
-        $this->getJson("/api/landlord/invoices/{$invoice->id}")
-            ->assertNotFound();
+        $this->assertNotSoftDeleted($invoice);
     });
 });
 
 describe('restore', function () {
-    it('restores a soft-deleted invoice', function () {
+    it('does not expose a restore endpoint', function () {
         $invoice = Invoice::factory()->create();
         $invoice->delete();
-
-        $this->postJson("/api/landlord/invoices/{$invoice->id}/restore")
-            ->assertOk()
-            ->assertJsonPath('data.id', $invoice->id);
-
-        $this->assertNotSoftDeleted($invoice);
-    });
-
-    it('returns 404 when the invoice is not soft deleted', function () {
-        $invoice = Invoice::factory()->create();
 
         $this->postJson("/api/landlord/invoices/{$invoice->id}/restore")
             ->assertNotFound();
@@ -321,47 +292,26 @@ describe('restore', function () {
 });
 
 describe('destroyMany', function () {
-    it('soft deletes the given invoices', function () {
+    it('does not expose a bulk delete endpoint', function () {
         $first = Invoice::factory()->create();
         $second = Invoice::factory()->create();
 
         $this->deleteJson('/api/landlord/invoices/destroy-many', [
             'ids' => [$first->id, $second->id],
-        ])->assertNoContent();
-
-        $this->assertSoftDeleted($first);
-        $this->assertSoftDeleted($second);
-    });
-
-    it('returns 422 when ids are missing', function () {
-        $this->deleteJson('/api/landlord/invoices/destroy-many', [])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['ids']);
-    });
-});
-
-describe('restoreMany', function () {
-    it('restores the given soft-deleted invoices', function () {
-        $first = Invoice::factory()->create();
-        $second = Invoice::factory()->create();
-        $first->delete();
-        $second->delete();
-
-        $this->postJson('/api/landlord/invoices/restore-many', [
-            'ids' => [$first->id, $second->id],
-        ])->assertNoContent();
+        ])->assertMethodNotAllowed();
 
         $this->assertNotSoftDeleted($first);
         $this->assertNotSoftDeleted($second);
     });
+});
 
-    it('returns 422 when an id is not soft deleted', function () {
+describe('restoreMany', function () {
+    it('does not expose a bulk restore endpoint', function () {
         $invoice = Invoice::factory()->create();
+        $invoice->delete();
 
         $this->postJson('/api/landlord/invoices/restore-many', [
             'ids' => [$invoice->id],
-        ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['ids.0']);
+        ])->assertMethodNotAllowed();
     });
 });

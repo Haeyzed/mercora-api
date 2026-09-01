@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Landlord\Plans;
 
-use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\PlanStatus;
 use App\Http\Requests\Landlord\Plans\Concerns\MapsLegacyPlanFeatureHighlights;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,30 +40,6 @@ class UpdatePlanRequest extends FormRequest
              */
             'description' => ['sometimes', 'nullable', 'string'],
             /**
-             * Price in the smallest currency unit (cents).
-             *
-             * @example 7900
-             */
-            'price' => ['sometimes', 'integer', 'min:0'],
-            /**
-             * ISO 4217 currency code.
-             *
-             * @example USD
-             */
-            'currency' => ['sometimes', 'string', 'size:3', 'alpha', 'uppercase'],
-            /**
-             * Billing interval.
-             *
-             * @example yearly
-             */
-            'interval' => ['sometimes', Rule::enum(PlanInterval::class)],
-            /**
-             * Number of trial days before billing starts.
-             *
-             * @example 14
-             */
-            'trial_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
-            /**
              * Plan lifecycle status.
              *
              * @example active
@@ -93,10 +68,6 @@ class UpdatePlanRequest extends FormRequest
         return [
             'name' => 'name',
             'description' => 'description',
-            'price' => 'price',
-            'currency' => 'currency',
-            'interval' => 'interval',
-            'trial_days' => 'trial days',
             'status' => 'status',
             'feature_highlights' => 'feature highlights',
             'feature_highlights.*' => 'feature highlight',

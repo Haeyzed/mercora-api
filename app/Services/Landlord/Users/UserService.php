@@ -100,7 +100,7 @@ class UserService
      */
     public function update(User $user, array $data): User
     {
-        unset($data['roles']);
+        unset($data['roles'], $data['password'], $data['is_active']);
 
         $user->update($data);
 
@@ -139,6 +139,7 @@ class UserService
     /**
      * Deactivate a landlord user.
      *
+     *
      * @throws ValidationException When deactivating the last Super Admin.
      */
     public function deactivate(User $user): User
@@ -156,6 +157,7 @@ class UserService
 
     /**
      * Soft delete a landlord user.
+     *
      *
      * @throws ValidationException When deleting the last Super Admin.
      */

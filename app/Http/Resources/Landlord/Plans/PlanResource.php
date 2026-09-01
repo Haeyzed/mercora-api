@@ -24,13 +24,11 @@ class PlanResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'description' => $this->description,
-            'price' => $this->price,
-            'currency' => $this->currency,
-            'interval' => $this->interval,
-            'trial_days' => $this->trial_days,
             'status' => $this->status,
             'feature_highlights' => $this->feature_highlights ?? [],
+            'primary_price' => new PlanPriceResource($this->whenLoaded('primaryPrice')),
             'features' => FeatureResource::collection($this->whenLoaded('features')),
+            'prices' => PlanPriceResource::collection($this->whenLoaded('prices')),
             'subscriptions' => SubscriptionResource::collection($this->whenLoaded('subscriptions')),
         ];
     }

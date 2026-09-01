@@ -35,12 +35,12 @@ class InvoicePolicy
 
     public function delete(User $user, ?Invoice $invoice = null): bool
     {
-        return $this->allow($user, Permission::InvoicesDelete);
+        return false;
     }
 
     public function restore(User $user, ?Invoice $invoice = null): bool
     {
-        return $this->allow($user, Permission::InvoicesDelete);
+        return false;
     }
 
     public function pay(User $user, Invoice $invoice): bool

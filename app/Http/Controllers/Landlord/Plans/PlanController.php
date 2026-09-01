@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Landlord\Plans\DestroyManyRequest;
 use App\Http\Requests\Landlord\Plans\RestoreManyRequest;
 use App\Http\Requests\Landlord\Plans\StorePlanRequest;
+use App\Http\Requests\Landlord\Plans\SyncPlanFeaturesRequest;
 use App\Http\Requests\Landlord\Plans\UpdatePlanRequest;
 use App\Http\Resources\Landlord\Plans\PlanResource;
 use App\Http\Resources\Shared\World\OptionResource;
@@ -39,7 +40,7 @@ class PlanController extends Controller
     #[QueryParameter('filter[interval]', description: 'Exact billing interval.', type: 'string')]
     #[QueryParameter('filter[currency]', description: 'Exact ISO 4217 currency code.', type: 'string')]
     #[QueryParameter('search', description: 'Partial match across name, slug, and description.', type: 'string')]
-    #[QueryParameter('include', description: 'Comma-separated relationships. Allowed: subscriptions.', type: 'string')]
+    #[QueryParameter('include', description: 'Comma-separated relationships. Allowed: subscriptions, prices, features.', type: 'string')]
     #[QueryParameter('page', description: 'Page number.', type: 'int')]
     #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
     public function index(Request $request): AnonymousResourceCollection
@@ -87,7 +88,7 @@ class PlanController extends Controller
      * Show a plan.
      */
     #[Endpoint(operationId: 'showLandlordPlan', title: 'Show a plan')]
-    #[QueryParameter('include', description: 'Comma-separated relationships. Allowed: subscriptions.', type: 'string')]
+    #[QueryParameter('include', description: 'Comma-separated relationships. Allowed: subscriptions, prices, features.', type: 'string')]
     public function show(Request $request, Plan $plan): PlanResource
     {
         $this->authorize('view', $plan);
@@ -107,6 +108,19 @@ class PlanController extends Controller
 
         return $this->planService
             ->update($plan, $request->validated())
+            ->toResource(PlanResource::class);
+    }
+
+    /**
+     * Replace entitlement features on a plan.
+     */
+    #[Endpoint(operationId: 'syncLandlordPlanFeatures', title: 'Sync plan features')]
+    public function syncFeatures(SyncPlanFeaturesRequest $request, Plan $plan): PlanResource
+    {
+        $this->authorize('update', $plan);
+
+        return $this->planService
+            ->syncFeatures($plan, $request->validated('features'))
             ->toResource(PlanResource::class);
     }
 

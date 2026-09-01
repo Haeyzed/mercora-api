@@ -38,25 +38,6 @@ class ActivityService
     }
 
     /**
-     * Paginate activity select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return Activity::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (Activity $activity): array => [
-                'label' => $activity->description,
-                'value' => $activity->id,
-            ]);
-    }
-
-    /**
      * Load an activity with optional allowed relationships.
      */
     public function show(Activity $activity, Request $request): Activity

@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Landlord\Subscriptions;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Landlord\Subscriptions\DestroyManyRequest;
-use App\Http\Requests\Landlord\Subscriptions\RestoreManyRequest;
+use App\Http\Requests\Landlord\Subscriptions\ChangeSubscriptionPlanRequest;
 use App\Http\Requests\Landlord\Subscriptions\StoreSubscriptionRequest;
-use App\Http\Requests\Landlord\Subscriptions\UpdateSubscriptionRequest;
 use App\Http\Resources\Landlord\Subscriptions\SubscriptionResource;
-use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\Subscription;
 use App\Services\Landlord\Subscriptions\SubscriptionService;
 use Dedoc\Scramble\Attributes\Endpoint;
@@ -20,7 +17,6 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response as HttpResponse;
 
 #[Group('Landlord Subscriptions')]
 class SubscriptionController extends Controller
@@ -45,24 +41,6 @@ class SubscriptionController extends Controller
         $this->authorize('viewAny', Subscription::class);
 
         return SubscriptionResource::collection($this->subscriptionService->paginate($request));
-    }
-
-    /**
-     * List subscription options for selects.
-     *
-     * @return AnonymousResourceCollection<int, OptionResource>
-     */
-    #[Endpoint(operationId: 'listLandlordSubscriptionOptions', title: 'List subscription options')]
-    #[QueryParameter('filter[tenant_id]', description: 'Exact tenant id.', type: 'string')]
-    #[QueryParameter('filter[status]', description: 'Exact subscription status.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match across tenant and plan name or slug.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function options(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', Subscription::class);
-
-        return OptionResource::collection($this->subscriptionService->options($request));
     }
 
     /**
@@ -98,13 +76,13 @@ class SubscriptionController extends Controller
     /**
      * Change the plan on a subscription.
      */
-    #[Endpoint(operationId: 'updateLandlordSubscription', title: 'Update a subscription')]
-    public function update(UpdateSubscriptionRequest $request, Subscription $subscription): SubscriptionResource
+    #[Endpoint(operationId: 'changeLandlordSubscriptionPlan', title: 'Change subscription plan')]
+    public function changePlan(ChangeSubscriptionPlanRequest $request, Subscription $subscription): SubscriptionResource
     {
-        $this->authorize('update', $subscription);
+        $this->authorize('changePlan', $subscription);
 
         return $this->subscriptionService
-            ->update($subscription, $request->validated())
+            ->changePlan($subscription, $request->validated())
             ->toResource(SubscriptionResource::class);
     }
 
@@ -132,57 +110,5 @@ class SubscriptionController extends Controller
         return $this->subscriptionService
             ->requestRenewal($subscription)
             ->toResource(SubscriptionResource::class);
-    }
-
-    /**
-     * Soft delete a subscription.
-     */
-    #[Endpoint(operationId: 'destroyLandlordSubscription', title: 'Delete a subscription')]
-    public function destroy(Subscription $subscription): HttpResponse
-    {
-        $this->authorize('delete', $subscription);
-
-        $this->subscriptionService->destroy($subscription);
-
-        return response()->noContent();
-    }
-
-    /**
-     * Restore a soft-deleted subscription.
-     */
-    #[Endpoint(operationId: 'restoreLandlordSubscription', title: 'Restore a subscription')]
-    public function restore(Subscription $subscription): SubscriptionResource
-    {
-        $this->authorize('restore', $subscription);
-
-        return $this->subscriptionService
-            ->restore($subscription)
-            ->toResource(SubscriptionResource::class);
-    }
-
-    /**
-     * Soft delete many subscriptions.
-     */
-    #[Endpoint(operationId: 'destroyManyLandlordSubscriptions', title: 'Delete many subscriptions')]
-    public function destroyMany(DestroyManyRequest $request): HttpResponse
-    {
-        $this->authorize('delete', Subscription::class);
-
-        $this->subscriptionService->destroyMany($request->ids());
-
-        return response()->noContent();
-    }
-
-    /**
-     * Restore many soft-deleted subscriptions.
-     */
-    #[Endpoint(operationId: 'restoreManyLandlordSubscriptions', title: 'Restore many subscriptions')]
-    public function restoreMany(RestoreManyRequest $request): HttpResponse
-    {
-        $this->authorize('restore', Subscription::class);
-
-        $this->subscriptionService->restoreMany($request->ids());
-
-        return response()->noContent();
     }
 }

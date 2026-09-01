@@ -146,17 +146,6 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns activity options as label and value pairs', function () {
-        $activity = Activity::factory()->create(['description' => 'Tenant was created']);
-
-        $this->getJson('/api/landlord/activities/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'Tenant was created')
-            ->assertJsonPath('data.0.value', $activity->id);
-    });
-});
-
 describe('show', function () {
     it('returns a single activity', function () {
         $activity = Activity::factory()->create(['description' => 'Tenant was created']);

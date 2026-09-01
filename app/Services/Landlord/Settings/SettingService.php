@@ -41,25 +41,6 @@ class SettingService
     }
 
     /**
-     * Paginate setting select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return Setting::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (Setting $setting): array => [
-                'label' => $setting->key,
-                'value' => $setting->id,
-            ]);
-    }
-
-    /**
      * Create a platform setting.
      *
      * @param  array{group: string, key: string, type: SettingType|string, value: mixed, description?: string|null}  $data

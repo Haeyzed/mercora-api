@@ -97,17 +97,6 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns setting options as label and value pairs', function () {
-        $setting = Setting::factory()->create(['key' => 'app.name']);
-
-        $this->getJson('/api/landlord/settings/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'app.name')
-            ->assertJsonPath('data.0.value', $setting->id);
-    });
-});
-
 describe('store', function () {
     it('creates a string setting', function () {
         $this->postJson('/api/landlord/settings', settingPayload())

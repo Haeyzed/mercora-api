@@ -7,6 +7,8 @@ namespace App\Models\Landlord;
 use App\Enums\Landlord\PlanInterval;
 use Database\Factories\Landlord\PlanPriceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,5 +76,11 @@ class PlanPrice extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    #[Scope]
+    protected function ordered(Builder $query): void
+    {
+        $query->orderByDesc('is_active')->orderBy('currency')->orderBy('id');
     }
 }

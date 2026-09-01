@@ -28,19 +28,24 @@ class SubscriptionPolicy
         return $this->allow($user, Permission::SubscriptionsCreate);
     }
 
-    public function update(User $user, Subscription $subscription): bool
+    public function changePlan(User $user, Subscription $subscription): bool
     {
         return $this->allow($user, Permission::SubscriptionsChangePlan);
     }
 
+    public function update(User $user, Subscription $subscription): bool
+    {
+        return $this->changePlan($user, $subscription);
+    }
+
     public function delete(User $user, ?Subscription $subscription = null): bool
     {
-        return $this->allow($user, Permission::SubscriptionsDelete);
+        return false;
     }
 
     public function restore(User $user, ?Subscription $subscription = null): bool
     {
-        return $this->allow($user, Permission::SubscriptionsDelete);
+        return false;
     }
 
     public function cancel(User $user, Subscription $subscription): bool

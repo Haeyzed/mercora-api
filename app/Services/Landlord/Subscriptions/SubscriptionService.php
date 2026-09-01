@@ -21,7 +21,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Manages tenant subscriptions to catalog plans and their billing lifecycle.
@@ -56,26 +55,6 @@ class SubscriptionService
             ->ordered()
             ->paginate($this->perPage($request))
             ->withQueryString();
-    }
-
-    /**
-     * Paginate subscription select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return Subscription::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->with(['tenant', 'plan'])
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (Subscription $subscription): array => [
-                'label' => ($subscription->tenant?->name ?? $subscription->tenant_id).' — '.($subscription->plan?->name ?? (string) $subscription->plan_id),
-                'value' => $subscription->id,
-            ]);
     }
 
     /**
@@ -143,7 +122,7 @@ class SubscriptionService
      * @throws ModelNotFoundException When the plan or price does not exist.
      * @throws ValidationException When the subscription is canceled or no active price exists.
      */
-    public function update(Subscription $subscription, array $data): Subscription
+    public function changePlan(Subscription $subscription, array $data): Subscription
     {
         if ($subscription->status === SubscriptionStatus::Canceled) {
             throw ValidationException::withMessages([
@@ -290,48 +269,6 @@ class SubscriptionService
                     'status' => SubscriptionStatus::PastDue,
                 ]);
             });
-    }
-
-    /**
-     * Soft delete a subscription.
-     */
-    public function destroy(Subscription $subscription): void
-    {
-        $subscription->delete();
-    }
-
-    /**
-     * Restore a soft-deleted subscription.
-     *
-     * @throws HttpException When the subscription is not trashed (404).
-     */
-    public function restore(Subscription $subscription): Subscription
-    {
-        abort_unless($subscription->trashed(), 404);
-
-        $subscription->restore();
-
-        return $subscription->refresh();
-    }
-
-    /**
-     * Soft delete many subscriptions.
-     *
-     * @param  list<int>  $ids
-     */
-    public function destroyMany(array $ids): void
-    {
-        Subscription::query()->whereKey($ids)->delete();
-    }
-
-    /**
-     * Restore many soft-deleted subscriptions.
-     *
-     * @param  list<int>  $ids
-     */
-    public function restoreMany(array $ids): void
-    {
-        Subscription::onlyTrashed()->whereKey($ids)->restore();
     }
 
     /**

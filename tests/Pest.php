@@ -27,6 +27,7 @@ uses()->beforeEach(function (): void {
     'Feature/Http/Controllers/Shared/World',
     'Feature/Http/Controllers/Landlord/Tenants',
     'Feature/Http/Controllers/Landlord/Plans',
+    'Feature/Http/Controllers/Landlord/Payments',
     'Feature/Http/Controllers/Landlord/Subscriptions',
     'Feature/Http/Controllers/Landlord/Billing',
     'Feature/Http/Controllers/Landlord/Settings',

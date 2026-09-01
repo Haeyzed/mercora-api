@@ -10,7 +10,6 @@ use App\Http\Requests\Landlord\Notifications\RestoreManyRequest;
 use App\Http\Requests\Landlord\Notifications\StoreNoticeRequest;
 use App\Http\Requests\Landlord\Notifications\UpdateNoticeRequest;
 use App\Http\Resources\Landlord\Notifications\NotificationResource;
-use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\Notice;
 use App\Services\Landlord\Notifications\NoticeService;
 use Dedoc\Scramble\Attributes\Endpoint;
@@ -45,24 +44,6 @@ class NotificationController extends Controller
         $this->authorize('viewAny', Notice::class);
 
         return NotificationResource::collection($this->noticeService->paginate($request));
-    }
-
-    /**
-     * List notice options for selects.
-     *
-     * @return AnonymousResourceCollection<int, OptionResource>
-     */
-    #[Endpoint(operationId: 'listLandlordNotificationOptions', title: 'List notification options')]
-    #[QueryParameter('filter[user_id]', description: 'Exact recipient user id.', type: 'int')]
-    #[QueryParameter('filter[status]', description: 'Exact notice status.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match across title, body, and recipient name or email.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function options(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', Notice::class);
-
-        return OptionResource::collection($this->noticeService->options($request));
     }
 
     /**
@@ -119,6 +100,19 @@ class NotificationController extends Controller
         return $this->noticeService
             ->read($notice)
             ->toResource(NotificationResource::class);
+    }
+
+    /**
+     * Mark all unread notices for the authenticated user as read.
+     */
+    #[Endpoint(operationId: 'readAllLandlordNotifications', title: 'Read all notifications')]
+    public function readAll(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Notice::class);
+
+        $count = $this->noticeService->readAll($request->user()->id);
+
+        return response()->json(['read' => $count]);
     }
 
     /**

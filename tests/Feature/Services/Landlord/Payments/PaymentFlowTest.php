@@ -151,8 +151,8 @@ describe('plan price selection', function () {
     it('snapshots selected plan price on subscription creation', function () {
         $this->travelTo('2026-08-29 20:00:00');
 
-        $plan = Plan::factory()->active()->create(['trial_days' => 0]);
-        $price = $plan->prices()->first();
+        $plan = Plan::factory()->active()->create();
+        $price = $plan->prices()->firstOrFail();
 
         $tenant = Tenant::factory()->create();
 

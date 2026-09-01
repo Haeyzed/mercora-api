@@ -93,17 +93,6 @@ describe('index', function () {
     });
 });
 
-describe('options', function () {
-    it('returns API key options as label and value pairs', function () {
-        $apiKey = ApiKey::factory()->create(['name' => 'CI deploy']);
-
-        $this->getJson('/api/landlord/api-keys/options')
-            ->assertOk()
-            ->assertJsonPath('data.0.label', 'CI deploy')
-            ->assertJsonPath('data.0.value', $apiKey->id);
-    });
-});
-
 describe('store', function () {
     afterEach(function (): void {
         Str::createRandomStringsNormally();

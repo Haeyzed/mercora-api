@@ -10,7 +10,6 @@ use App\Http\Requests\Landlord\Settings\RestoreManyRequest;
 use App\Http\Requests\Landlord\Settings\StoreSettingRequest;
 use App\Http\Requests\Landlord\Settings\UpdateSettingRequest;
 use App\Http\Resources\Landlord\Settings\SettingResource;
-use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\Setting;
 use App\Services\Landlord\Settings\SettingService;
 use Dedoc\Scramble\Attributes\Endpoint;
@@ -44,24 +43,6 @@ class SettingController extends Controller
         $this->authorize('viewAny', Setting::class);
 
         return SettingResource::collection($this->settingService->paginate($request));
-    }
-
-    /**
-     * List setting options for selects.
-     *
-     * @return AnonymousResourceCollection<int, OptionResource>
-     */
-    #[Endpoint(operationId: 'listLandlordSettingOptions', title: 'List setting options')]
-    #[QueryParameter('filter[group]', description: 'Exact setting group.', type: 'string')]
-    #[QueryParameter('filter[type]', description: 'Exact setting type.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match across key, group, and description.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function options(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', Setting::class);
-
-        return OptionResource::collection($this->settingService->options($request));
     }
 
     /**

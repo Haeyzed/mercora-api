@@ -7,7 +7,6 @@ namespace App\Http\Requests\Landlord\Users;
 use App\Models\Landlord\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * Validate an update to a landlord user.
@@ -42,12 +41,6 @@ class UpdateUserRequest extends FormRequest
              * @example ada@mercora.test
              */
             'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user->id)],
-            /**
-             * Replacement password. Hashed before storage.
-             *
-             * @example password
-             */
-            'password' => ['sometimes', 'string', Password::defaults()],
         ];
     }
 }

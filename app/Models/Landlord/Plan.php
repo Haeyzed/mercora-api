@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
-use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\PlanStatus;
 use App\Models\Concerns\AllowsIncludes;
 use App\Models\Concerns\LogsLandlordActivity;
@@ -16,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -27,7 +27,7 @@ use Spatie\Sluggable\SlugOptions;
  * capabilities are attached through the {@see self::features()} relationship.
  * Marketing bullet points are stored in {@see self::$feature_highlights}.
  */
-#[Fillable(['name', 'slug', 'description', 'price', 'currency', 'interval', 'trial_days', 'status', 'feature_highlights'])]
+#[Fillable(['name', 'slug', 'description', 'status', 'feature_highlights'])]
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
@@ -37,8 +37,6 @@ class Plan extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'interval' => 'monthly',
-        'trial_days' => 0,
         'status' => 'draft',
     ];
 
@@ -60,9 +58,6 @@ class Plan extends Model
     protected function casts(): array
     {
         return [
-            'price' => 'integer',
-            'trial_days' => 'integer',
-            'interval' => PlanInterval::class,
             'status' => PlanStatus::class,
             'feature_highlights' => 'array',
         ];
@@ -84,6 +79,29 @@ class Plan extends Model
     public function prices(): HasMany
     {
         return $this->hasMany(PlanPrice::class);
+    }
+
+    /**
+     * The first active price for display and catalog summaries.
+     *
+     * @return HasOne<PlanPrice, $this>
+     */
+    public function primaryPrice(): HasOne
+    {
+        return $this->hasOne(PlanPrice::class)->ofMany(
+            ['id' => 'min'],
+            fn (Builder $query): Builder => $query->where('is_active', true),
+        );
+    }
+
+    /**
+     * Alias for scoped child route binding ({plan_price}).
+     *
+     * @return HasMany<PlanPrice, $this>
+     */
+    public function planPrices(): HasMany
+    {
+        return $this->prices();
     }
 
     /**
@@ -112,8 +130,14 @@ class Plan extends Model
             ->when(filled($filters['name'] ?? null), fn (Builder $query): Builder => $query->where('name', 'like', '%'.$filters['name'].'%'))
             ->when(filled($filters['slug'] ?? null), fn (Builder $query): Builder => $query->where('slug', $filters['slug']))
             ->when(filled($filters['status'] ?? null), fn (Builder $query): Builder => $query->where('status', $filters['status']))
-            ->when(filled($filters['interval'] ?? null), fn (Builder $query): Builder => $query->where('interval', $filters['interval']))
-            ->when(filled($filters['currency'] ?? null), fn (Builder $query): Builder => $query->where('currency', $filters['currency']));
+            ->when(filled($filters['interval'] ?? null), fn (Builder $query): Builder => $query->whereHas(
+                'prices',
+                fn (Builder $query): Builder => $query->where('interval', $filters['interval'])->where('is_active', true),
+            ))
+            ->when(filled($filters['currency'] ?? null), fn (Builder $query): Builder => $query->whereHas(
+                'prices',
+                fn (Builder $query): Builder => $query->where('currency', $filters['currency'])->where('is_active', true),
+            ));
     }
 
     #[Scope]

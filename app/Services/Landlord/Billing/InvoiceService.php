@@ -18,7 +18,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Issues and settles landlord invoices against subscription billing terms.
@@ -51,25 +50,6 @@ class InvoiceService
             ->ordered()
             ->paginate($this->perPage($request))
             ->withQueryString();
-    }
-
-    /**
-     * Paginate invoice select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return Invoice::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (Invoice $invoice): array => [
-                'label' => $invoice->number,
-                'value' => $invoice->id,
-            ]);
     }
 
     /**
@@ -176,20 +156,6 @@ class InvoiceService
     }
 
     /**
-     * Initialize payment for an open invoice. Direct pay without payment is not allowed.
-     *
-     * @throws ValidationException Always; payment must go through the payment provider.
-     */
-    public function pay(Invoice $invoice): Invoice
-    {
-        $this->ensureOpen($invoice);
-
-        throw ValidationException::withMessages([
-            'status' => 'Payment must be completed through the payment provider.',
-        ]);
-    }
-
-    /**
      * Mark an open invoice as paid from a verified payment.
      *
      * @throws ValidationException When the invoice is not open or amount/currency mismatch.
@@ -233,48 +199,6 @@ class InvoiceService
         ]);
 
         return $invoice->refresh();
-    }
-
-    /**
-     * Soft delete an invoice.
-     */
-    public function destroy(Invoice $invoice): void
-    {
-        $invoice->delete();
-    }
-
-    /**
-     * Restore a soft-deleted invoice.
-     *
-     * @throws HttpException When the invoice is not trashed (404).
-     */
-    public function restore(Invoice $invoice): Invoice
-    {
-        abort_unless($invoice->trashed(), 404);
-
-        $invoice->restore();
-
-        return $invoice->refresh();
-    }
-
-    /**
-     * Soft delete many invoices.
-     *
-     * @param  list<int>  $ids
-     */
-    public function destroyMany(array $ids): void
-    {
-        Invoice::query()->whereKey($ids)->delete();
-    }
-
-    /**
-     * Restore many soft-deleted invoices.
-     *
-     * @param  list<int>  $ids
-     */
-    public function restoreMany(array $ids): void
-    {
-        Invoice::onlyTrashed()->whereKey($ids)->restore();
     }
 
     /**

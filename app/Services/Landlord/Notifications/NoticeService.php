@@ -42,25 +42,6 @@ class NoticeService
     }
 
     /**
-     * Paginate notice select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return Notice::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (Notice $notice): array => [
-                'label' => $notice->title,
-                'value' => $notice->id,
-            ]);
-    }
-
-    /**
      * Load a notice with optional allowed relationships.
      */
     public function show(Notice $notice, Request $request): Notice
@@ -158,6 +139,20 @@ class NoticeService
     public function restoreMany(array $ids): void
     {
         Notice::onlyTrashed()->whereKey($ids)->restore();
+    }
+
+    /**
+     * Mark all unread notices for a user as read.
+     */
+    public function readAll(int $userId): int
+    {
+        return Notice::query()
+            ->where('user_id', $userId)
+            ->where('status', NoticeStatus::Unread)
+            ->update([
+                'status' => NoticeStatus::Read,
+                'read_at' => now(),
+            ]);
     }
 
     /**

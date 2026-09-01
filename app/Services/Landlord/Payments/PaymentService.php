@@ -16,7 +16,9 @@ use App\Services\Landlord\Payments\DTOs\PaymentVerificationResult;
 use App\Services\Landlord\Payments\DTOs\WebhookPayload;
 use App\Services\Landlord\Payments\Exceptions\PaymentException;
 use App\Services\Landlord\Subscriptions\SubscriptionService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -42,6 +44,28 @@ class PaymentService
         private InvoiceService $invoiceService,
         private SubscriptionService $subscriptionService,
     ) {}
+
+    /**
+     * Paginate payments using model filter scopes.
+     *
+     * @return LengthAwarePaginator<int, Payment>
+     */
+    public function paginate(Request $request): LengthAwarePaginator
+    {
+        return Payment::query()
+            ->filter($request->input('filter', []))
+            ->ordered()
+            ->paginate(min(max($request->integer('per_page', 15), 1), 100))
+            ->withQueryString();
+    }
+
+    /**
+     * Load a payment record.
+     */
+    public function show(Payment $payment): Payment
+    {
+        return $payment;
+    }
 
     /**
      * Create or reuse a pending payment for an open invoice and start provider checkout.

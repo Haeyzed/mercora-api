@@ -44,25 +44,6 @@ class ApiKeyService
     }
 
     /**
-     * Paginate API key select options as label/value pairs.
-     *
-     * @return LengthAwarePaginator<int, array{label: string, value: int}>
-     */
-    public function options(Request $request): LengthAwarePaginator
-    {
-        return ApiKey::query()
-            ->filter($request->input('filter', []))
-            ->search($request->query('search'))
-            ->ordered()
-            ->paginate($this->perPage($request))
-            ->withQueryString()
-            ->through(fn (ApiKey $apiKey): array => [
-                'label' => $apiKey->name,
-                'value' => $apiKey->id,
-            ]);
-    }
-
-    /**
      * Load an API key with optional allowed relationships.
      */
     public function show(ApiKey $apiKey, Request $request): ApiKey

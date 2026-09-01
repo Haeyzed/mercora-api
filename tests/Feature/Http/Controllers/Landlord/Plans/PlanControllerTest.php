@@ -17,10 +17,12 @@ function planPayload(array $overrides = []): array
     return [
         'name' => 'Starter Plan',
         'description' => 'For new stores',
-        'price' => 2900,
-        'currency' => 'USD',
-        'interval' => 'monthly',
-        'trial_days' => 14,
+        'price' => [
+            'amount' => 2900,
+            'currency' => 'USD',
+            'interval' => 'monthly',
+            'trial_days' => 14,
+        ],
         'status' => 'active',
         'feature_highlights' => ['Online store', 'Basic reports'],
         ...$overrides,
@@ -37,7 +39,7 @@ describe('index', function () {
             ->assertJsonPath('meta.total', 2)
             ->assertJsonStructure([
                 'data' => [
-                    ['id', 'name', 'slug', 'price', 'currency', 'interval', 'status'],
+                    ['id', 'name', 'slug', 'primary_price', 'status'],
                 ],
                 'meta' => ['current_page', 'last_page', 'per_page', 'total'],
                 'links' => ['first', 'last', 'prev', 'next'],
@@ -75,7 +77,7 @@ describe('index', function () {
             ->assertJsonPath('data.0.status', 'active');
     });
 
-    it('filters plans by interval', function () {
+    it('filters plans by interval on active prices', function () {
         Plan::factory()->yearly()->create(['name' => 'Starter Plan']);
         Plan::factory()->create(['name' => 'Growth Plan']);
 
@@ -83,7 +85,7 @@ describe('index', function () {
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.name', 'Starter Plan')
-            ->assertJsonPath('data.0.interval', 'yearly');
+            ->assertJsonPath('data.0.primary_price.interval', 'yearly');
     });
 
     it('searches plans across name and slug', function (string $term) {
@@ -139,25 +141,29 @@ describe('options', function () {
 });
 
 describe('store', function () {
-    it('creates a plan', function () {
+    it('creates a plan with an initial price', function () {
         $this->postJson('/api/landlord/plans', planPayload())
             ->assertCreated()
             ->assertJsonPath('data.name', 'Starter Plan')
             ->assertJsonPath('data.slug', 'starter-plan')
-            ->assertJsonPath('data.price', 2900)
-            ->assertJsonPath('data.currency', 'USD')
-            ->assertJsonPath('data.interval', 'monthly')
-            ->assertJsonPath('data.trial_days', 14)
+            ->assertJsonPath('data.primary_price.amount', 2900)
+            ->assertJsonPath('data.primary_price.currency', 'USD')
+            ->assertJsonPath('data.primary_price.interval', 'monthly')
+            ->assertJsonPath('data.primary_price.trial_days', 14)
             ->assertJsonPath('data.status', 'active')
             ->assertJsonPath('data.feature_highlights.0', 'Online store');
 
         $this->assertDatabaseHas('plans', [
             'name' => 'Starter Plan',
             'slug' => 'starter-plan',
-            'price' => 2900,
-            'currency' => 'USD',
-            'interval' => PlanInterval::Monthly->value,
             'status' => PlanStatus::Active->value,
+        ]);
+
+        $this->assertDatabaseHas('plan_prices', [
+            'currency' => 'USD',
+            'amount' => 2900,
+            'interval' => PlanInterval::Monthly->value,
+            'is_active' => true,
         ]);
     });
 
@@ -185,23 +191,31 @@ describe('store', function () {
     it('returns 422 when required plan fields are missing', function () {
         $this->postJson('/api/landlord/plans', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['name', 'price', 'currency', 'interval']);
+            ->assertJsonValidationErrors(['name', 'price', 'price.amount', 'price.currency', 'price.interval']);
     });
 
     it('returns 422 when the currency is not an iso code', function () {
         $this->postJson('/api/landlord/plans', planPayload([
-            'currency' => 'us',
+            'price' => [
+                'amount' => 2900,
+                'currency' => 'us',
+                'interval' => 'monthly',
+            ],
         ]))
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['currency']);
+            ->assertJsonValidationErrors(['price.currency']);
     });
 
     it('returns 422 when the interval is invalid', function () {
         $this->postJson('/api/landlord/plans', planPayload([
-            'interval' => 'weekly',
+            'price' => [
+                'amount' => 2900,
+                'currency' => 'USD',
+                'interval' => 'weekly',
+            ],
         ]))
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['interval']);
+            ->assertJsonValidationErrors(['price.interval']);
     });
 });
 
@@ -212,7 +226,8 @@ describe('show', function () {
         $this->getJson("/api/landlord/plans/{$plan->id}")
             ->assertOk()
             ->assertJsonPath('data.name', 'Starter Plan')
-            ->assertJsonPath('data.slug', 'starter-plan');
+            ->assertJsonPath('data.slug', 'starter-plan')
+            ->assertJsonPath('data.primary_price.amount', 2900);
     });
 
     it('returns 404 when the plan does not exist', function () {
@@ -236,20 +251,18 @@ describe('update', function () {
 
         $this->putJson("/api/landlord/plans/{$plan->id}", [
             'name' => 'Growth Plan',
-            'price' => 7900,
             'status' => 'active',
         ])
             ->assertOk()
             ->assertJsonPath('data.name', 'Growth Plan')
             ->assertJsonPath('data.slug', 'growth-plan')
-            ->assertJsonPath('data.price', 7900)
+            ->assertJsonPath('data.primary_price.amount', 2900)
             ->assertJsonPath('data.status', 'active');
 
         $this->assertDatabaseHas('plans', [
             'id' => $plan->id,
             'name' => 'Growth Plan',
             'slug' => 'growth-plan',
-            'price' => 7900,
             'status' => PlanStatus::Active->value,
         ]);
     });

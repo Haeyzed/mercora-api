@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord\Plans;
 
-use App\Enums\Landlord\PlanInterval;
-use App\Enums\Landlord\PlanStatus;
 use App\Models\Landlord\Plan;
+use App\Models\Landlord\Subscription;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Manages the landlord subscription plan catalog.
  *
- * Domain: sellable plans with pricing, intervals, and marketing feature highlights.
+ * Domain: sellable plans with marketing metadata; billing amounts live on {@see PlanPrice}.
  *
  * Invariants:
  * - Plans are soft-deletable; restore requires a trashed row.
@@ -24,6 +24,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PlanService
 {
+    public function __construct(private EntitlementService $entitlementService) {}
+
     /**
      * Paginate plans using model filter, search, and ordered scopes.
      *
@@ -35,6 +37,7 @@ class PlanService
             ->filter($request->input('filter', []))
             ->search($request->query('search'))
             ->withIncludes($request->query('include'))
+            ->with('primaryPrice')
             ->ordered()
             ->paginate($this->perPage($request))
             ->withQueryString();
@@ -45,7 +48,9 @@ class PlanService
      */
     public function show(Plan $plan, Request $request): Plan
     {
-        return $plan->loadAllowedIncludes($request->query('include'));
+        return $plan
+            ->loadAllowedIncludes($request->query('include'))
+            ->loadMissing('primaryPrice');
     }
 
     /**
@@ -68,17 +73,33 @@ class PlanService
     }
 
     /**
-     * Create a plan.
+     * Create a plan and its initial active price.
      *
-     * @param  array{name: string, price: int, currency: string, interval: PlanInterval|string, description?: string|null, trial_days?: int, status?: PlanStatus|string, feature_highlights?: list<string>|null}  $data
+     * @param  array{name: string, price: array{amount: int, currency: string, interval: string, interval_count?: int, trial_days?: int}, description?: string|null, status?: string, feature_highlights?: list<string>|null}  $data
      */
     public function store(array $data): Plan
     {
-        return Plan::query()->create($data);
+        return DB::transaction(function () use ($data): Plan {
+            $priceData = $data['price'];
+            unset($data['price']);
+
+            $plan = Plan::query()->create($data);
+
+            $plan->prices()->create([
+                'currency' => $priceData['currency'],
+                'amount' => $priceData['amount'],
+                'interval' => $priceData['interval'],
+                'interval_count' => $priceData['interval_count'] ?? 1,
+                'trial_days' => $priceData['trial_days'] ?? 0,
+                'is_active' => true,
+            ]);
+
+            return $plan->load('primaryPrice');
+        });
     }
 
     /**
-     * Update a plan.
+     * Update catalog fields on a plan. Billing terms are managed via plan prices.
      *
      * @param  array<string, mixed>  $data
      */
@@ -86,7 +107,7 @@ class PlanService
     {
         $plan->update($data);
 
-        return $plan->refresh();
+        return $plan->refresh()->load('primaryPrice');
     }
 
     /**
@@ -108,7 +129,7 @@ class PlanService
 
         $plan->restore();
 
-        return $plan->refresh();
+        return $plan->refresh()->load('primaryPrice');
     }
 
     /**
@@ -129,6 +150,35 @@ class PlanService
     public function restoreMany(array $ids): void
     {
         Plan::onlyTrashed()->whereKey($ids)->restore();
+    }
+
+    /**
+     * Replace entitlement features attached to a plan.
+     *
+     * @param  list<array{feature_id: int, value: mixed}>  $features
+     */
+    public function syncFeatures(Plan $plan, array $features): Plan
+    {
+        $sync = [];
+
+        foreach ($features as $feature) {
+            $sync[(int) $feature['feature_id']] = ['value' => $feature['value']];
+        }
+
+        $plan->features()->sync($sync);
+
+        Subscription::query()
+            ->where('plan_id', $plan->id)
+            ->current()
+            ->with('tenant')
+            ->get()
+            ->each(function (Subscription $subscription): void {
+                if ($subscription->tenant !== null) {
+                    $this->entitlementService->forget($subscription->tenant);
+                }
+            });
+
+        return $plan->load('features');
     }
 
     private function perPage(Request $request): int

@@ -7,7 +7,10 @@ use App\Http\Controllers\Landlord\Audit\ActivityController;
 use App\Http\Controllers\Landlord\Auth\AuthController;
 use App\Http\Controllers\Landlord\Billing\InvoiceController;
 use App\Http\Controllers\Landlord\Notifications\NotificationController;
+use App\Http\Controllers\Landlord\Payments\PaymentController;
+use App\Http\Controllers\Landlord\Plans\FeatureController;
 use App\Http\Controllers\Landlord\Plans\PlanController;
+use App\Http\Controllers\Landlord\Plans\PlanPriceController;
 use App\Http\Controllers\Landlord\Roles\PermissionController;
 use App\Http\Controllers\Landlord\Roles\RoleController;
 use App\Http\Controllers\Landlord\Settings\SettingController;
@@ -58,41 +61,31 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
             Route::delete('tenants/{tenant}/domains/{domain}', [DomainController::class, 'destroy'])->name('tenants.domains.destroy');
         });
 
-        Route::get('subscriptions/options', [SubscriptionController::class, 'options'])->name('subscriptions.options');
-        Route::delete('subscriptions/destroy-many', [SubscriptionController::class, 'destroyMany'])->name('subscriptions.destroy_many');
-        Route::post('subscriptions/restore-many', [SubscriptionController::class, 'restoreMany'])->name('subscriptions.restore_many');
-        Route::post('subscriptions/{subscription}/restore', [SubscriptionController::class, 'restore'])->withTrashed()->name('subscriptions.restore');
+        Route::post('subscriptions/{subscription}/change-plan', [SubscriptionController::class, 'changePlan'])->name('subscriptions.change_plan');
         Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
         Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
-        Route::apiResource('subscriptions', SubscriptionController::class);
+        Route::apiResource('subscriptions', SubscriptionController::class)->only(['index', 'show', 'store']);
 
-        Route::get('invoices/options', [InvoiceController::class, 'options'])->name('invoices.options');
-        Route::delete('invoices/destroy-many', [InvoiceController::class, 'destroyMany'])->name('invoices.destroy_many');
-        Route::post('invoices/restore-many', [InvoiceController::class, 'restoreMany'])->name('invoices.restore_many');
-        Route::post('invoices/{invoice}/restore', [InvoiceController::class, 'restore'])->withTrashed()->name('invoices.restore');
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
         Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
-        Route::apiResource('invoices', InvoiceController::class);
+        Route::apiResource('invoices', InvoiceController::class)->except(['destroy']);
 
-        Route::get('activities/options', [ActivityController::class, 'options'])->name('activities.options');
         Route::delete('activities/destroy-many', [ActivityController::class, 'destroyMany'])->name('activities.destroy_many');
         Route::apiResource('activities', ActivityController::class)->only(['index', 'show', 'destroy']);
 
-        Route::get('api-keys/options', [ApiKeyController::class, 'options'])->name('api-keys.options');
         Route::delete('api-keys/destroy-many', [ApiKeyController::class, 'destroyMany'])->name('api-keys.destroy_many');
         Route::post('api-keys/restore-many', [ApiKeyController::class, 'restoreMany'])->name('api-keys.restore_many');
         Route::post('api-keys/{api_key}/restore', [ApiKeyController::class, 'restore'])->withTrashed()->name('api-keys.restore');
         Route::post('api-keys/{api_key}/revoke', [ApiKeyController::class, 'revoke'])->name('api-keys.revoke');
         Route::apiResource('api-keys', ApiKeyController::class);
 
-        Route::get('notifications/options', [NotificationController::class, 'options'])->name('notifications.options');
         Route::delete('notifications/destroy-many', [NotificationController::class, 'destroyMany'])->name('notifications.destroy_many');
         Route::post('notifications/restore-many', [NotificationController::class, 'restoreMany'])->name('notifications.restore_many');
         Route::post('notifications/{notice}/restore', [NotificationController::class, 'restore'])->withTrashed()->name('notifications.restore');
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read_all');
         Route::post('notifications/{notice}/read', [NotificationController::class, 'read'])->name('notifications.read');
         Route::apiResource('notifications', NotificationController::class)->parameters(['notifications' => 'notice']);
 
-        Route::get('settings/options', [SettingController::class, 'options'])->name('settings.options');
         Route::delete('settings/destroy-many', [SettingController::class, 'destroyMany'])->name('settings.destroy_many');
         Route::post('settings/restore-many', [SettingController::class, 'restoreMany'])->name('settings.restore_many');
         Route::post('settings/{setting}/restore', [SettingController::class, 'restore'])->withTrashed()->name('settings.restore');
@@ -102,7 +95,28 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
         Route::delete('plans/destroy-many', [PlanController::class, 'destroyMany'])->name('plans.destroy_many');
         Route::post('plans/restore-many', [PlanController::class, 'restoreMany'])->name('plans.restore_many');
         Route::post('plans/{plan}/restore', [PlanController::class, 'restore'])->withTrashed()->name('plans.restore');
+        Route::post('plans/{plan}/features/sync', [PlanController::class, 'syncFeatures'])->name('plans.features.sync');
         Route::apiResource('plans', PlanController::class);
+
+        Route::scopeBindings()->group(function (): void {
+            Route::get('plans/{plan}/prices', [PlanPriceController::class, 'index'])->name('plans.prices.index');
+            Route::post('plans/{plan}/prices', [PlanPriceController::class, 'store'])->name('plans.prices.store');
+            Route::get('plans/{plan}/prices/{plan_price}', [PlanPriceController::class, 'show'])->name('plans.prices.show');
+            Route::put('plans/{plan}/prices/{plan_price}', [PlanPriceController::class, 'update'])->name('plans.prices.update');
+            Route::post('plans/{plan}/prices/{plan_price}/activate', [PlanPriceController::class, 'activate'])->name('plans.prices.activate');
+            Route::post('plans/{plan}/prices/{plan_price}/deactivate', [PlanPriceController::class, 'deactivate'])->name('plans.prices.deactivate');
+            Route::delete('plans/{plan}/prices/{plan_price}', [PlanPriceController::class, 'destroy'])->name('plans.prices.destroy');
+        });
+
+        Route::get('features/options', [FeatureController::class, 'options'])->name('features.options');
+        Route::delete('features/destroy-many', [FeatureController::class, 'destroyMany'])->name('features.destroy_many');
+        Route::post('features/restore-many', [FeatureController::class, 'restoreMany'])->name('features.restore_many');
+        Route::post('features/{feature}/restore', [FeatureController::class, 'restore'])->withTrashed()->name('features.restore');
+        Route::apiResource('features', FeatureController::class);
+
+        Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
 
         Route::prefix('world')->name('world.')->group(function (): void {
             $worldActions = function (string $resource, string $parameter, string $controller): void {

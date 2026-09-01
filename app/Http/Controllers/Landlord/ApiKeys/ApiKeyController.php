@@ -10,7 +10,6 @@ use App\Http\Requests\Landlord\ApiKeys\RestoreManyRequest;
 use App\Http\Requests\Landlord\ApiKeys\StoreApiKeyRequest;
 use App\Http\Requests\Landlord\ApiKeys\UpdateApiKeyRequest;
 use App\Http\Resources\Landlord\ApiKeys\ApiKeyResource;
-use App\Http\Resources\Shared\World\OptionResource;
 use App\Models\Landlord\ApiKey;
 use App\Services\Landlord\ApiKeys\ApiKeyService;
 use Dedoc\Scramble\Attributes\Endpoint;
@@ -45,24 +44,6 @@ class ApiKeyController extends Controller
         $this->authorize('viewAny', ApiKey::class);
 
         return ApiKeyResource::collection($this->apiKeyService->paginate($request));
-    }
-
-    /**
-     * List API key options for selects.
-     *
-     * @return AnonymousResourceCollection<int, OptionResource>
-     */
-    #[Endpoint(operationId: 'listLandlordApiKeyOptions', title: 'List API key options')]
-    #[QueryParameter('filter[user_id]', description: 'Exact owner user id.', type: 'int')]
-    #[QueryParameter('filter[status]', description: 'Exact API key status.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match across name, prefix, and owner name or email.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function options(Request $request): AnonymousResourceCollection
-    {
-        $this->authorize('viewAny', ApiKey::class);
-
-        return OptionResource::collection($this->apiKeyService->options($request));
     }
 
     /**
