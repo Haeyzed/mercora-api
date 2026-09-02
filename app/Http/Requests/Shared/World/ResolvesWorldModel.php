@@ -19,6 +19,16 @@ trait ResolvesWorldModel
      */
     protected function worldModelClass(): string
     {
+        return $this->resolveWorldModelClass() ?? abort(404);
+    }
+
+    /**
+     * Nullable resolution for Scramble / docs evaluation outside a World route.
+     *
+     * @return class-string<Model>|null
+     */
+    protected function resolveWorldModelClass(): ?string
+    {
         return match (true) {
             $this->routeIs('landlord.world.countries.*') => Country::class,
             $this->routeIs('landlord.world.states.*') => State::class,
@@ -26,7 +36,7 @@ trait ResolvesWorldModel
             $this->routeIs('landlord.world.timezones.*') => Timezone::class,
             $this->routeIs('landlord.world.languages.*') => Language::class,
             $this->routeIs('landlord.world.currencies.*') => Currency::class,
-            default => abort(404),
+            default => null,
         };
     }
 }

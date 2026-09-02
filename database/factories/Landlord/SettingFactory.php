@@ -19,41 +19,38 @@ class SettingFactory extends Factory
     public function definition(): array
     {
         return [
-            'group' => 'general',
-            'key' => 'app.'.fake()->unique()->slug(2),
+            'group' => 'platform',
+            'key' => 'platform.'.fake()->unique()->slug(2),
             'type' => SettingType::String,
             'value' => 'Mercora',
-            'description' => 'Platform display name',
+            'description' => null,
         ];
     }
 
     public function boolean(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'key' => 'app.'.fake()->unique()->slug(2).'.enabled',
+            'key' => 'platform.'.fake()->unique()->slug(2).'.enabled',
             'type' => SettingType::Boolean,
             'value' => '1',
-            'description' => 'Feature flag',
         ]);
     }
 
     public function integer(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'key' => 'app.'.fake()->unique()->slug(2).'.limit',
+            'key' => 'platform.'.fake()->unique()->slug(2).'.limit',
             'type' => SettingType::Integer,
             'value' => '14',
-            'description' => 'Numeric limit',
         ]);
     }
 
     public function json(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'key' => 'app.'.fake()->unique()->slug(2).'.options',
+            'key' => 'platform.'.fake()->unique()->slug(2).'.options',
             'type' => SettingType::Json,
             'value' => json_encode(['locale' => 'en'], JSON_THROW_ON_ERROR),
-            'description' => 'Structured options',
         ]);
     }
 }

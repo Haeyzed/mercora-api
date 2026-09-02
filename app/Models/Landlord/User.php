@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
+use App\Enums\Media\MediaCollection;
+use App\Enums\Media\MediaConversion;
 use App\Models\Concerns\AllowsIncludes;
 use App\Models\Concerns\LogsLandlordActivity;
 use Database\Factories\UserFactory;
@@ -16,14 +18,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<UserFactory> */
-    use AllowsIncludes, HasApiTokens, HasFactory, HasRoles, LogsLandlordActivity, Notifiable;
+    use AllowsIncludes, HasApiTokens, HasFactory, HasRoles, InteractsWithMedia, LogsLandlordActivity, Notifiable;
 
     protected static function newFactory(): UserFactory
     {
@@ -58,6 +64,23 @@ class User extends Authenticatable
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(MediaCollection::Avatar->value)
+            ->singleFile()
+            ->acceptsMimeTypes(config('media.mimes.image', []));
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $thumb = config('media.conversions.thumb');
+
+        $this->addMediaConversion(MediaConversion::Thumb->value)
+            ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
+            ->nonQueued()
+            ->performOnCollections(MediaCollection::Avatar->value);
     }
 
     /**

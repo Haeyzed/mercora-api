@@ -1,7 +1,13 @@
 <?php
 
 use App\Models\Landlord\User;
+use App\Notifications\Landlord\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 uses(LazilyRefreshDatabase::class);
@@ -62,6 +68,73 @@ describe('login', function () {
     });
 });
 
+describe('forgotPassword', function () {
+    it('returns no content without revealing whether the email exists', function () {
+        Notification::fake();
+
+        $this->postJson('/api/landlord/auth/forgot-password', [
+            'email' => 'missing@mercora.test',
+        ])->assertNoContent();
+
+        Notification::assertNothingSent();
+    });
+
+    it('sends a reset notification for an active user', function () {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'reset@mercora.test']);
+
+        $this->postJson('/api/landlord/auth/forgot-password', [
+            'email' => 'reset@mercora.test',
+        ])->assertNoContent();
+
+        Notification::assertSentTo($user, ResetPasswordNotification::class);
+    });
+
+    it('does not send a reset notification for inactive users', function () {
+        Notification::fake();
+
+        User::factory()->inactive()->create(['email' => 'reset@mercora.test']);
+
+        $this->postJson('/api/landlord/auth/forgot-password', [
+            'email' => 'reset@mercora.test',
+        ])->assertNoContent();
+
+        Notification::assertNothingSent();
+    });
+});
+
+describe('resetPassword', function () {
+    it('resets the password and revokes existing tokens', function () {
+        $user = User::factory()->create(['email' => 'reset@mercora.test']);
+        $user->createToken('landlord');
+        $token = Password::broker('users')->createToken($user);
+
+        $this->postJson('/api/landlord/auth/reset-password', [
+            'email' => 'reset@mercora.test',
+            'token' => $token,
+            'password' => 'NewPassword1!',
+            'password_confirmation' => 'NewPassword1!',
+        ])->assertNoContent();
+
+        expect(Hash::check('NewPassword1!', $user->fresh()->password))->toBeTrue();
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    });
+
+    it('returns 422 for an invalid token', function () {
+        User::factory()->create(['email' => 'reset@mercora.test']);
+
+        $this->postJson('/api/landlord/auth/reset-password', [
+            'email' => 'reset@mercora.test',
+            'token' => 'invalid-token',
+            'password' => 'NewPassword1!',
+            'password_confirmation' => 'NewPassword1!',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email']);
+    });
+});
+
 describe('me', function () {
     it('returns the authenticated landlord user', function () {
         $user = User::factory()->create([
@@ -82,6 +155,91 @@ describe('me', function () {
     it('returns 401 when no token is provided', function () {
         $this->getJson('/api/landlord/auth/me')
             ->assertUnauthorized();
+    });
+});
+
+describe('updateProfile', function () {
+    it('updates profile fields and optional avatar', function () {
+        Storage::fake('public');
+
+        $user = User::factory()->create([
+            'name' => 'Ada Lovelace',
+            'email' => 'ada@mercora.test',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/landlord/auth/profile', [
+            'name' => 'Grace Hopper',
+            'email' => 'grace@mercora.test',
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Grace Hopper')
+            ->assertJsonPath('data.email', 'grace@mercora.test');
+
+        expect($user->fresh()->getFirstMedia('avatar'))->not->toBeNull();
+    });
+});
+
+describe('avatar', function () {
+    it('replaces the authenticated user avatar', function () {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/landlord/auth/avatar', [
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.collection', 'avatar');
+
+        expect($user->fresh()->getFirstMedia('avatar'))->not->toBeNull();
+    });
+
+    it('removes the authenticated user avatar', function () {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $user->addMedia(UploadedFile::fake()->image('avatar.jpg'))->toMediaCollection('avatar');
+
+        $this->deleteJson('/api/landlord/auth/avatar')
+            ->assertNoContent();
+
+        expect($user->fresh()->getFirstMedia('avatar'))->toBeNull();
+    });
+});
+
+describe('changePassword', function () {
+    it('changes the password and revokes all tokens', function () {
+        $user = User::factory()->create(['password' => 'password']);
+        $user->createToken('landlord');
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/landlord/auth/change-password', [
+            'current_password' => 'password',
+            'password' => 'NewPassword1!',
+            'password_confirmation' => 'NewPassword1!',
+        ])->assertNoContent();
+
+        expect(Hash::check('NewPassword1!', $user->fresh()->password))->toBeTrue();
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    });
+
+    it('returns 422 when the current password is incorrect', function () {
+        $user = User::factory()->create(['password' => 'password']);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/landlord/auth/change-password', [
+            'current_password' => 'wrong-password',
+            'password' => 'NewPassword1!',
+            'password_confirmation' => 'NewPassword1!',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['current_password']);
     });
 });
 

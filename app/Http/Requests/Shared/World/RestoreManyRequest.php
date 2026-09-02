@@ -26,6 +26,8 @@ class RestoreManyRequest extends FormRequest
      */
     public function rules(): array
     {
+        $model = $this->resolveWorldModelClass();
+
         return [
             /**
              * Ids of soft-deleted records to restore.
@@ -33,7 +35,9 @@ class RestoreManyRequest extends FormRequest
              * @example [1, 2, 3]
              */
             'ids' => ['required', 'array', 'min:1', 'max:100'],
-            'ids.*' => ['required', 'integer', Rule::exists($this->worldModelClass(), 'id')->whereNotNull('deleted_at')],
+            'ids.*' => $model === null
+                ? ['required', 'integer']
+                : ['required', 'integer', Rule::exists($model, 'id')->whereNotNull('deleted_at')],
         ];
     }
 

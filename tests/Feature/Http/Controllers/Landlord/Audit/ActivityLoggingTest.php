@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Landlord\RoleName;
+use App\Enums\Landlord\SettingType;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Activity;
 use App\Models\Landlord\ApiKey;
@@ -68,16 +69,21 @@ it('does not store API key hashes in activity attributes', function () {
 });
 
 it('does not store setting values in activity attributes', function () {
-    $setting = Setting::factory()->create([
+    Setting::query()->create([
+        'group' => 'platform',
         'key' => 'platform.name',
+        'type' => SettingType::String,
         'value' => 'secret-setting-value',
     ]);
 
-    $this->putJson("/api/landlord/settings/{$setting->id}", [
-        'description' => 'Updated',
+    $this->putJson('/api/landlord/settings/platform', [
+        'platform.name' => 'secret-setting-value',
+        'platform.support_phone' => 'Updated',
     ])->assertOk();
 
-    $activity = Activity::query()->forSubject($setting)->where('event', 'updated')->first();
+    $setting = Setting::query()->where('key', 'platform.support_phone')->first();
+    $activity = Activity::query()->forSubject($setting)->where('event', 'created')->first()
+        ?? Activity::query()->forSubject($setting)->where('event', 'updated')->first();
 
     expect(json_encode($activity?->properties))->not->toContain('secret-setting-value');
 });

@@ -26,7 +26,7 @@ class UpdateRoleRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var Role $role */
+        /** @var Role|null $role */
         $role = $this->route('role');
 
         return [
@@ -35,7 +35,7 @@ class UpdateRoleRequest extends FormRequest
              *
              * @example Billing
              */
-            'name' => ['sometimes', 'string', 'max:255', Rule::unique('roles', 'name')->where('guard_name', 'web')->ignore($role->id)],
+            'name' => ['sometimes', 'string', 'max:255', Rule::unique('roles', 'name')->where('guard_name', 'web')->ignore($role?->id)],
             /**
              * Complete permission set for the role.
              *

@@ -25,7 +25,7 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var User $user */
+        /** @var User|null $user */
         $user = $this->route('user');
 
         return [
@@ -40,7 +40,7 @@ class UpdateUserRequest extends FormRequest
              *
              * @example ada@mercora.test
              */
-            'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user->id)],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user?->id)],
         ];
     }
 }

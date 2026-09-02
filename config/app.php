@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Landlord Password Reset URL
+    |--------------------------------------------------------------------------
+    |
+    | Frontend URL used in landlord password reset emails. Token and email are
+    | appended as query parameters.
+    |
+    */
+
+    'landlord_password_reset_url' => env('LANDLORD_PASSWORD_RESET_URL', env('APP_URL')),
+
 ];

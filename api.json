@@ -45,6 +45,9 @@
             "name": "Landlord Plans"
         },
         {
+            "name": "Landlord Payments"
+        },
+        {
             "name": "Shared World"
         }
     ],
@@ -54,86 +57,6 @@
         }
     ],
     "paths": {
-        "/landlord/api-keys/options": {
-            "get": {
-                "operationId": "listLandlordApiKeyOptions",
-                "summary": "List API key options",
-                "tags": [
-                    "Landlord API Keys"
-                ],
-                "parameters": [
-                    {
-                        "name": "filter[user_id]",
-                        "in": "query",
-                        "description": "Exact owner user id.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "filter[status]",
-                        "in": "query",
-                        "description": "Exact API key status.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across name, prefix, and owner name or email.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `OptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
         "/landlord/api-keys/destroy-many": {
             "delete": {
                 "operationId": "destroyManyLandlordApiKeys",
@@ -604,86 +527,6 @@
                 }
             }
         },
-        "/landlord/activities/options": {
-            "get": {
-                "operationId": "listLandlordActivityOptions",
-                "summary": "List activity options",
-                "tags": [
-                    "Landlord Audit"
-                ],
-                "parameters": [
-                    {
-                        "name": "filter[event]",
-                        "in": "query",
-                        "description": "Exact activity event.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[log_name]",
-                        "in": "query",
-                        "description": "Exact log name.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match on the activity description.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `OptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
         "/landlord/activities/destroy-many": {
             "delete": {
                 "operationId": "destroyManyLandlordActivities",
@@ -964,6 +807,76 @@
                 "security": []
             }
         },
+        "/landlord/auth/forgot-password": {
+            "post": {
+                "operationId": "forgotLandlordPassword",
+                "summary": "Forgot password",
+                "tags": [
+                    "Landlord Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ForgotPasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/landlord/auth/reset-password": {
+            "post": {
+                "operationId": "resetLandlordPassword",
+                "summary": "Reset password",
+                "tags": [
+                    "Landlord Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
         "/landlord/auth/logout": {
             "post": {
                 "operationId": "logoutLandlord",
@@ -1023,68 +936,42 @@
                 }
             }
         },
-        "/landlord/invoices/options": {
-            "get": {
-                "operationId": "listLandlordInvoiceOptions",
-                "summary": "List invoice options",
+        "/landlord/auth/profile": {
+            "put": {
+                "operationId": "updateLandlordProfile",
+                "summary": "Update profile",
                 "tags": [
-                    "Landlord Billing"
+                    "Landlord Auth"
                 ],
-                "parameters": [
-                    {
-                        "name": "filter[tenant_id]",
-                        "in": "query",
-                        "description": "Exact tenant id.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[status]",
-                        "in": "query",
-                        "description": "Exact invoice status.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across invoice number and tenant name or slug.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateProfileRequest"
+                            }
                         }
                     }
-                ],
+                },
                 "responses": {
                     "200": {
-                        "description": "Array of `OptionResource`",
+                        "description": "`UserResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/UserResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "roles"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -1093,42 +980,6 @@
                                 }
                             }
                         }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/landlord/invoices/destroy-many": {
-            "delete": {
-                "operationId": "destroyManyLandlordInvoices",
-                "summary": "Delete many invoices",
-                "tags": [
-                    "Landlord Billing"
-                ],
-                "parameters": [
-                    {
-                        "name": "ids[]",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -1139,81 +990,103 @@
                 }
             }
         },
-        "/landlord/invoices/restore-many": {
+        "/landlord/auth/avatar": {
             "post": {
-                "operationId": "restoreManyLandlordInvoices",
-                "summary": "Restore many invoices",
+                "operationId": "storeLandlordAvatar",
+                "summary": "Replace avatar",
                 "tags": [
-                    "Landlord Billing"
+                    "Landlord Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreAvatarRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`MediaResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MediaResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "destroyLandlordAvatar",
+                "summary": "Remove avatar",
+                "tags": [
+                    "Landlord Auth"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/auth/change-password": {
+            "post": {
+                "operationId": "changeLandlordPassword",
+                "summary": "Change password",
+                "tags": [
+                    "Landlord Auth"
                 ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/App.Http.Requests.Landlord.Billing.RestoreManyRequest"
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/landlord/invoices/{invoice}/restore": {
-            "post": {
-                "operationId": "restoreLandlordInvoice",
-                "summary": "Restore an invoice",
-                "tags": [
-                    "Landlord Billing"
-                ],
-                "parameters": [
-                    {
-                        "name": "invoice",
-                        "in": "path",
-                        "required": true,
-                        "description": "The invoice ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "`InvoiceResource`",
+                        "description": "No content",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/InvoiceResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
+                                    "type": "string"
                                 }
                             }
                         }
                     },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -1617,118 +1490,6 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
-            },
-            "delete": {
-                "operationId": "destroyLandlordInvoice",
-                "summary": "Delete an invoice",
-                "tags": [
-                    "Landlord Billing"
-                ],
-                "parameters": [
-                    {
-                        "name": "invoice",
-                        "in": "path",
-                        "required": true,
-                        "description": "The invoice ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/landlord/notifications/options": {
-            "get": {
-                "operationId": "listLandlordNotificationOptions",
-                "summary": "List notification options",
-                "tags": [
-                    "Landlord Notifications"
-                ],
-                "parameters": [
-                    {
-                        "name": "filter[user_id]",
-                        "in": "query",
-                        "description": "Exact recipient user id.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "filter[status]",
-                        "in": "query",
-                        "description": "Exact notice status.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across title, body, and recipient name or email.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `OptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
             }
         },
         "/landlord/notifications/destroy-many": {
@@ -1842,6 +1603,41 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/notifications/read-all": {
+            "post": {
+                "operationId": "readAllLandlordNotifications",
+                "summary": "Read all notifications",
+                "tags": [
+                    "Landlord Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "read": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "required": [
+                                        "read"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -2201,6 +1997,192 @@
                 }
             }
         },
+        "/landlord/payments": {
+            "get": {
+                "operationId": "listLandlordPayments",
+                "summary": "List payments",
+                "tags": [
+                    "Landlord Payments"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[tenant_id]",
+                        "in": "query",
+                        "description": "Exact tenant id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[invoice_id]",
+                        "in": "query",
+                        "description": "Exact invoice id.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "description": "Exact payment status.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[provider]",
+                        "in": "query",
+                        "description": "Exact payment provider.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page. Maximum 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PaymentResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/payments/{payment}": {
+            "get": {
+                "operationId": "showLandlordPayment",
+                "summary": "Show a payment",
+                "tags": [
+                    "Landlord Payments"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "description": "The payment ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/payments/{payment}/verify": {
+            "post": {
+                "operationId": "verifyLandlordPayment",
+                "summary": "Verify a payment",
+                "tags": [
+                    "Landlord Payments"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "description": "The payment ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PaymentResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PaymentResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/landlord/plans/options": {
             "get": {
                 "operationId": "listLandlordPlanOptions",
@@ -2377,7 +2359,17 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/PlanResource"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/PlanResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "primary_price"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -2395,6 +2387,78 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/plans/{plan}/features/sync": {
+            "post": {
+                "operationId": "syncLandlordPlanFeatures",
+                "summary": "Sync plan features",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SyncPlanFeaturesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`PlanResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/PlanResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "features"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -2458,7 +2522,7 @@
                     {
                         "name": "include",
                         "in": "query",
-                        "description": "Comma-separated relationships. Allowed: subscriptions.",
+                        "description": "Comma-separated relationships. Allowed: subscriptions, prices, features.",
                         "schema": {
                             "type": "string"
                         }
@@ -2535,7 +2599,17 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/PlanResource"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/PlanResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "primary_price"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -2577,7 +2651,7 @@
                     {
                         "name": "include",
                         "in": "query",
-                        "description": "Comma-separated relationships. Allowed: subscriptions.",
+                        "description": "Comma-separated relationships. Allowed: subscriptions, prices, features.",
                         "schema": {
                             "type": "string"
                         }
@@ -2592,7 +2666,17 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/PlanResource"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/PlanResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "primary_price"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -2648,7 +2732,17 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/PlanResource"
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/PlanResource"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "primary_price"
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -2684,6 +2778,879 @@
                         "in": "path",
                         "required": true,
                         "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/plans/{plan}/prices": {
+            "get": {
+                "operationId": "listLandlordPlanPrices",
+                "summary": "List plan prices",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page. Maximum 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PlanPriceResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "storeLandlordPlanPrice",
+                "summary": "Create a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StorePlanPriceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PlanPriceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/landlord/plans/{plan}/prices/{planPrice}": {
+            "get": {
+                "operationId": "showLandlordPlanPrice",
+                "summary": "Show a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "planPrice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan price ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PlanPriceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "updateLandlordPlanPrice",
+                "summary": "Update a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "planPrice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan price ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePlanPriceRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PlanPriceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "destroyLandlordPlanPrice",
+                "summary": "Delete a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "planPrice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan price ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/plans/{plan}/prices/{planPrice}/activate": {
+            "post": {
+                "operationId": "activateLandlordPlanPrice",
+                "summary": "Activate a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "planPrice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan price ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PlanPriceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/plans/{plan}/prices/{planPrice}/deactivate": {
+            "post": {
+                "operationId": "deactivateLandlordPlanPrice",
+                "summary": "Deactivate a plan price",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "plan",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "planPrice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The plan price ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`PlanPriceResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PlanPriceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features/options": {
+            "get": {
+                "operationId": "listLandlordFeatureOptions",
+                "summary": "List feature options",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Partial match across name, key, and description.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page. Maximum 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `OptionResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/OptionResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features/destroy-many": {
+            "delete": {
+                "operationId": "destroyManyLandlordFeatures",
+                "summary": "Delete many features",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "ids[]",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features/restore-many": {
+            "post": {
+                "operationId": "restoreManyLandlordFeatures",
+                "summary": "Restore many features",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RestoreManyFeaturesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features/{feature}/restore": {
+            "post": {
+                "operationId": "restoreLandlordFeature",
+                "summary": "Restore a feature",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "description": "The feature ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`FeatureResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FeatureResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features": {
+            "get": {
+                "operationId": "listLandlordFeatures",
+                "summary": "List features",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[key]",
+                        "in": "query",
+                        "description": "Exact feature key.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[type]",
+                        "in": "query",
+                        "description": "Exact feature type.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[is_active]",
+                        "in": "query",
+                        "description": "Whether the feature is active.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Partial match across name, key, and description.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page. Maximum 100.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `FeatureResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FeatureResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "storeLandlordFeature",
+                "summary": "Create a feature",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreFeatureRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`FeatureResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FeatureResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/landlord/features/{feature}": {
+            "get": {
+                "operationId": "showLandlordFeature",
+                "summary": "Show a feature",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "description": "The feature ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`FeatureResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FeatureResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "updateLandlordFeature",
+                "summary": "Update a feature",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "description": "The feature ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFeatureRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FeatureResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FeatureResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "destroyLandlordFeature",
+                "summary": "Delete a feature",
+                "tags": [
+                    "Landlord Plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "feature",
+                        "in": "path",
+                        "required": true,
+                        "description": "The feature ID",
                         "schema": {
                             "type": "integer"
                         }
@@ -3016,264 +3983,16 @@
                 }
             }
         },
-        "/landlord/settings/options": {
-            "get": {
-                "operationId": "listLandlordSettingOptions",
-                "summary": "List setting options",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "parameters": [
-                    {
-                        "name": "filter[group]",
-                        "in": "query",
-                        "description": "Exact setting group.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[type]",
-                        "in": "query",
-                        "description": "Exact setting type.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across key, group, and description.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `OptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/landlord/settings/destroy-many": {
-            "delete": {
-                "operationId": "destroyManyLandlordSettings",
-                "summary": "Delete many settings",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "parameters": [
-                    {
-                        "name": "ids[]",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/landlord/settings/restore-many": {
-            "post": {
-                "operationId": "restoreManyLandlordSettings",
-                "summary": "Restore many settings",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/App.Http.Requests.Landlord.Settings.RestoreManyRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/landlord/settings/{setting}/restore": {
-            "post": {
-                "operationId": "restoreLandlordSetting",
-                "summary": "Restore a setting",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "parameters": [
-                    {
-                        "name": "setting",
-                        "in": "path",
-                        "required": true,
-                        "description": "The setting ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "`SettingResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/SettingResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
         "/landlord/settings": {
             "get": {
-                "operationId": "listLandlordSettings",
-                "summary": "List settings",
+                "operationId": "listLandlordSettingsDomains",
+                "summary": "List settings domains",
                 "tags": [
                     "Landlord Settings"
                 ],
-                "parameters": [
-                    {
-                        "name": "filter[group]",
-                        "in": "query",
-                        "description": "Exact setting group.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[key]",
-                        "in": "query",
-                        "description": "Exact setting key.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[type]",
-                        "in": "query",
-                        "description": "Exact setting type.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across key, group, and description.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "Array of `SettingResource`",
+                        "description": "Array of `SettingsDomainResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3282,7 +4001,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/SettingResource"
+                                                "$ref": "#/components/schemas/SettingsDomainResource"
                                             }
                                         }
                                     },
@@ -3300,82 +4019,35 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
-            },
-            "post": {
-                "operationId": "storeLandlordSetting",
-                "summary": "Create a setting",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StoreSettingRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "`SettingResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/SettingResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
             }
         },
-        "/landlord/settings/{setting}": {
+        "/landlord/settings/{domain}": {
             "get": {
-                "operationId": "showLandlordSetting",
-                "summary": "Show a setting",
+                "operationId": "showLandlordSettingsDomain",
+                "summary": "Show a settings domain",
                 "tags": [
                     "Landlord Settings"
                 ],
                 "parameters": [
                     {
-                        "name": "setting",
+                        "name": "domain",
                         "in": "path",
                         "required": true,
-                        "description": "The setting ID",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "`SettingResource`",
+                        "description": "`SettingsDomainResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/SettingResource"
+                                            "$ref": "#/components/schemas/SettingsDomainResource"
                                         }
                                     },
                                     "required": [
@@ -3387,9 +4059,6 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -3397,19 +4066,18 @@
                 }
             },
             "put": {
-                "operationId": "updateLandlordSetting",
-                "summary": "Update a setting",
+                "operationId": "updateLandlordSettingsDomain",
+                "summary": "Update a settings domain",
                 "tags": [
                     "Landlord Settings"
                 ],
                 "parameters": [
                     {
-                        "name": "setting",
+                        "name": "domain",
                         "in": "path",
                         "required": true,
-                        "description": "The setting ID",
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -3417,139 +4085,21 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UpdateSettingRequest"
+                                "$ref": "#/components/schemas/UpdateSettingsDomainRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "`SettingResource`",
+                        "description": "`SettingsDomainResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/SettingResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            },
-            "delete": {
-                "operationId": "destroyLandlordSetting",
-                "summary": "Delete a setting",
-                "tags": [
-                    "Landlord Settings"
-                ],
-                "parameters": [
-                    {
-                        "name": "setting",
-                        "in": "path",
-                        "required": true,
-                        "description": "The setting ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/landlord/subscriptions/options": {
-            "get": {
-                "operationId": "listLandlordSubscriptionOptions",
-                "summary": "List subscription options",
-                "tags": [
-                    "Landlord Subscriptions"
-                ],
-                "parameters": [
-                    {
-                        "name": "filter[tenant_id]",
-                        "in": "query",
-                        "description": "Exact tenant id.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[status]",
-                        "in": "query",
-                        "description": "Exact subscription status.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Partial match across tenant and plan name or slug.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page. Maximum 100.",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `OptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/OptionResource"
-                                            }
+                                            "$ref": "#/components/schemas/SettingsDomainResource"
                                         }
                                     },
                                     "required": [
@@ -3564,39 +4114,6 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/landlord/subscriptions/destroy-many": {
-            "delete": {
-                "operationId": "destroyManyLandlordSubscriptions",
-                "summary": "Delete many subscriptions",
-                "tags": [
-                    "Landlord Subscriptions"
-                ],
-                "parameters": [
-                    {
-                        "name": "ids[]",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
@@ -3604,43 +4121,10 @@
                 }
             }
         },
-        "/landlord/subscriptions/restore-many": {
+        "/landlord/subscriptions/{subscription}/change-plan": {
             "post": {
-                "operationId": "restoreManyLandlordSubscriptions",
-                "summary": "Restore many subscriptions",
-                "tags": [
-                    "Landlord Subscriptions"
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/App.Http.Requests.Landlord.Subscriptions.RestoreManyRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "204": {
-                        "description": "No content"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/landlord/subscriptions/{subscription}/restore": {
-            "post": {
-                "operationId": "restoreLandlordSubscription",
-                "summary": "Restore a subscription",
+                "operationId": "changeLandlordSubscriptionPlan",
+                "summary": "Change subscription plan",
                 "tags": [
                     "Landlord Subscriptions"
                 ],
@@ -3655,6 +4139,16 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeSubscriptionPlanRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "`SubscriptionResource`",
@@ -3679,6 +4173,9 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
@@ -4002,98 +4499,6 @@
                                 }
                             }
                         }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            },
-            "put": {
-                "operationId": "updateLandlordSubscription",
-                "summary": "Update a subscription",
-                "tags": [
-                    "Landlord Subscriptions"
-                ],
-                "parameters": [
-                    {
-                        "name": "subscription",
-                        "in": "path",
-                        "required": true,
-                        "description": "The subscription ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateSubscriptionRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "`SubscriptionResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/SubscriptionResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            },
-            "delete": {
-                "operationId": "destroyLandlordSubscription",
-                "summary": "Delete a subscription",
-                "tags": [
-                    "Landlord Subscriptions"
-                ],
-                "parameters": [
-                    {
-                        "name": "subscription",
-                        "in": "path",
-                        "required": true,
-                        "description": "The subscription ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No content"
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
@@ -9437,7 +9842,7 @@
                     },
                     "subject_id": {
                         "type": [
-                            "integer",
+                            "string",
                             "null"
                         ]
                     },
@@ -9617,32 +10022,6 @@
                 ],
                 "title": "ApiKeyStatus"
             },
-            "App.Http.Requests.Landlord.Billing.RestoreManyRequest": {
-                "type": "object",
-                "description": "Validate invoice ids for a restoreMany action.",
-                "properties": {
-                    "ids": {
-                        "type": "array",
-                        "description": "Soft-deleted invoice ids to restore.",
-                        "examples": [
-                            [
-                                1,
-                                2,
-                                3
-                            ]
-                        ],
-                        "items": {
-                            "type": "integer"
-                        },
-                        "minItems": 1,
-                        "maxItems": 100
-                    }
-                },
-                "required": [
-                    "ids"
-                ],
-                "title": "App.Http.Requests.Landlord.Billing.RestoreManyRequest"
-            },
             "App.Http.Requests.Landlord.Notifications.RestoreManyRequest": {
                 "type": "object",
                 "description": "Validate notice ids for a restoreMany action.",
@@ -9694,58 +10073,6 @@
                     "ids"
                 ],
                 "title": "App.Http.Requests.Landlord.Plans.RestoreManyRequest"
-            },
-            "App.Http.Requests.Landlord.Settings.RestoreManyRequest": {
-                "type": "object",
-                "description": "Validate setting ids for a restoreMany action.",
-                "properties": {
-                    "ids": {
-                        "type": "array",
-                        "description": "Soft-deleted setting ids to restore.",
-                        "examples": [
-                            [
-                                1,
-                                2,
-                                3
-                            ]
-                        ],
-                        "items": {
-                            "type": "integer"
-                        },
-                        "minItems": 1,
-                        "maxItems": 100
-                    }
-                },
-                "required": [
-                    "ids"
-                ],
-                "title": "App.Http.Requests.Landlord.Settings.RestoreManyRequest"
-            },
-            "App.Http.Requests.Landlord.Subscriptions.RestoreManyRequest": {
-                "type": "object",
-                "description": "Validate subscription ids for a restoreMany action.",
-                "properties": {
-                    "ids": {
-                        "type": "array",
-                        "description": "Soft-deleted subscription ids to restore.",
-                        "examples": [
-                            [
-                                1,
-                                2,
-                                3
-                            ]
-                        ],
-                        "items": {
-                            "type": "integer"
-                        },
-                        "minItems": 1,
-                        "maxItems": 100
-                    }
-                },
-                "required": [
-                    "ids"
-                ],
-                "title": "App.Http.Requests.Landlord.Subscriptions.RestoreManyRequest"
             },
             "App.Http.Requests.Landlord.Tenants.RestoreManyRequest": {
                 "type": "object",
@@ -9835,6 +10162,44 @@
                     "email_verified_at"
                 ],
                 "title": "App.Http.Resources.Landlord.Users.UserResource"
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "current_password": {
+                        "type": "string",
+                        "description": "Current account password."
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "New password."
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "current_password",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "ChangePasswordRequest"
+            },
+            "ChangeSubscriptionPlanRequest": {
+                "type": "object",
+                "description": "Validate a plan change on a landlord subscription.",
+                "properties": {
+                    "plan_id": {
+                        "type": "integer"
+                    },
+                    "plan_price_id": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "plan_id"
+                ],
+                "title": "ChangeSubscriptionPlanRequest"
             },
             "CityResource": {
                 "type": "object",
@@ -10083,6 +10448,24 @@
                 ],
                 "title": "FeatureType"
             },
+            "ForgotPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Landlord account email.",
+                        "examples": [
+                            "admin@mercora.test"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "email"
+                ],
+                "title": "ForgotPasswordRequest"
+            },
             "ImportWorldRequest": {
                 "type": "object",
                 "description": "Validate a World spreadsheet upload.",
@@ -10289,6 +10672,65 @@
                 ],
                 "title": "LoginResource"
             },
+            "MediaResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "collection": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "file_name": {
+                        "type": "string"
+                    },
+                    "mime_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "thumbnail_url": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "collection",
+                    "name",
+                    "file_name",
+                    "mime_type",
+                    "size",
+                    "url",
+                    "thumbnail_url",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "MediaResource"
+            },
             "NoticeChannel": {
                 "type": "string",
                 "enum": [
@@ -10349,18 +10791,44 @@
                 "title": "NotificationResource"
             },
             "OptionResource": {
-                "type": "object",
-                "properties": {
-                    "label": {
-                        "type": "string"
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "properties": {
+                            "label": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "label",
+                            "value"
+                        ]
                     },
-                    "value": {
-                        "type": "string"
+                    {
+                        "type": "object",
+                        "properties": {
+                            "label": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "label",
+                            "value"
+                        ]
                     }
-                },
-                "required": [
-                    "label",
-                    "value"
                 ],
                 "title": "OptionResource"
             },
@@ -10491,6 +10959,46 @@
                 ],
                 "title": "PlanInterval"
             },
+            "PlanPriceResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "plan_id": {
+                        "type": "integer"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "integer"
+                    },
+                    "interval": {
+                        "$ref": "#/components/schemas/PlanInterval"
+                    },
+                    "interval_count": {
+                        "type": "integer"
+                    },
+                    "trial_days": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "plan_id",
+                    "currency",
+                    "amount",
+                    "interval",
+                    "interval_count",
+                    "trial_days",
+                    "is_active"
+                ],
+                "title": "PlanPriceResource"
+            },
             "PlanResource": {
                 "type": "object",
                 "properties": {
@@ -10509,18 +11017,6 @@
                             "null"
                         ]
                     },
-                    "price": {
-                        "type": "integer"
-                    },
-                    "currency": {
-                        "type": "string"
-                    },
-                    "interval": {
-                        "$ref": "#/components/schemas/PlanInterval"
-                    },
-                    "trial_days": {
-                        "type": "integer"
-                    },
                     "status": {
                         "$ref": "#/components/schemas/PlanStatus"
                     },
@@ -10528,10 +11024,19 @@
                         "type": "array",
                         "items": {}
                     },
+                    "primary_price": {
+                        "$ref": "#/components/schemas/PlanPriceResource"
+                    },
                     "features": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/FeatureResource"
+                        }
+                    },
+                    "prices": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlanPriceResource"
                         }
                     },
                     "subscriptions": {
@@ -10546,10 +11051,6 @@
                     "name",
                     "slug",
                     "description",
-                    "price",
-                    "currency",
-                    "interval",
-                    "trial_days",
                     "status",
                     "feature_highlights"
                 ],
@@ -10563,6 +11064,56 @@
                     "archived"
                 ],
                 "title": "PlanStatus"
+            },
+            "ResetPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "Password reset token from the email link."
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Landlord account email.",
+                        "examples": [
+                            "admin@mercora.test"
+                        ],
+                        "maxLength": 255
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "New password."
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "token",
+                    "email",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "ResetPasswordRequest"
+            },
+            "RestoreManyFeaturesRequest": {
+                "type": "object",
+                "description": "Validate feature ids for a restoreMany action.",
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minItems": 1,
+                        "maxItems": 100
+                    }
+                },
+                "required": [
+                    "ids"
+                ],
+                "title": "RestoreManyFeaturesRequest"
             },
             "RestoreManyRequest": {
                 "type": "object",
@@ -10614,48 +11165,22 @@
                 ],
                 "title": "RoleResource"
             },
-            "SettingResource": {
+            "SettingsDomainResource": {
                 "type": "object",
                 "properties": {
-                    "id": {
-                        "type": "integer"
-                    },
-                    "group": {
+                    "domain": {
                         "type": "string"
                     },
-                    "key": {
-                        "type": "string"
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/SettingType"
-                    },
-                    "value": {},
-                    "description": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
+                    "settings": {
+                        "type": "object",
+                        "additionalProperties": {}
                     }
                 },
                 "required": [
-                    "id",
-                    "group",
-                    "key",
-                    "type",
-                    "value",
-                    "description"
+                    "domain",
+                    "settings"
                 ],
-                "title": "SettingResource"
-            },
-            "SettingType": {
-                "type": "string",
-                "enum": [
-                    "string",
-                    "boolean",
-                    "integer",
-                    "json"
-                ],
-                "title": "SettingType"
+                "title": "SettingsDomainResource"
             },
             "StateResource": {
                 "type": "object",
@@ -10757,6 +11282,21 @@
                     "name"
                 ],
                 "title": "StoreApiKeyRequest"
+            },
+            "StoreAvatarRequest": {
+                "type": "object",
+                "properties": {
+                    "avatar": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Profile image file."
+                    }
+                },
+                "required": [
+                    "avatar"
+                ],
+                "title": "StoreAvatarRequest"
             },
             "StoreCityRequest": {
                 "type": "object",
@@ -11053,6 +11593,38 @@
                 ],
                 "title": "StoreDomainRequest"
             },
+            "StoreFeatureRequest": {
+                "type": "object",
+                "description": "Validate a new entitlement feature.",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/FeatureType"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "key",
+                    "name",
+                    "type"
+                ],
+                "title": "StoreFeatureRequest"
+            },
             "StoreInvoiceRequest": {
                 "type": "object",
                 "description": "Validate a new landlord invoice.",
@@ -11181,6 +11753,43 @@
                 ],
                 "title": "StoreNoticeRequest"
             },
+            "StorePlanPriceRequest": {
+                "type": "object",
+                "description": "Validate a new plan price.",
+                "properties": {
+                    "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "interval": {
+                        "$ref": "#/components/schemas/PlanInterval"
+                    },
+                    "interval_count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 36
+                    },
+                    "trial_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 365
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "currency",
+                    "amount",
+                    "interval"
+                ],
+                "title": "StorePlanPriceRequest"
+            },
             "StorePlanRequest": {
                 "type": "object",
                 "description": "Validate a new landlord plan.",
@@ -11204,37 +11813,57 @@
                         ]
                     },
                     "price": {
-                        "type": "integer",
-                        "description": "Price in the smallest currency unit (cents).",
-                        "examples": [
-                            2900
-                        ],
-                        "minimum": 0
-                    },
-                    "currency": {
-                        "type": "string",
-                        "description": "ISO 4217 currency code. World currency is ISO reference only.",
-                        "examples": [
-                            "USD"
-                        ],
-                        "minLength": 3,
-                        "maxLength": 3
-                    },
-                    "interval": {
-                        "description": "Billing interval.",
-                        "examples": [
-                            "monthly"
-                        ],
-                        "$ref": "#/components/schemas/PlanInterval"
-                    },
-                    "trial_days": {
-                        "type": "integer",
-                        "description": "Number of trial days before billing starts.",
-                        "examples": [
-                            14
-                        ],
-                        "minimum": 0,
-                        "maximum": 365
+                        "type": "object",
+                        "description": "Initial billable price for the plan.",
+                        "properties": {
+                            "amount": {
+                                "type": "integer",
+                                "description": "Price in the smallest currency unit (cents).",
+                                "examples": [
+                                    2900
+                                ],
+                                "minimum": 0
+                            },
+                            "currency": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code. World currency is ISO reference only.",
+                                "examples": [
+                                    "USD"
+                                ],
+                                "minLength": 3,
+                                "maxLength": 3
+                            },
+                            "interval": {
+                                "description": "Billing interval.",
+                                "examples": [
+                                    "monthly"
+                                ],
+                                "$ref": "#/components/schemas/PlanInterval"
+                            },
+                            "interval_count": {
+                                "type": "integer",
+                                "description": "Number of billing intervals per charge.",
+                                "examples": [
+                                    1
+                                ],
+                                "minimum": 1,
+                                "maximum": 36
+                            },
+                            "trial_days": {
+                                "type": "integer",
+                                "description": "Number of trial days before billing starts.",
+                                "examples": [
+                                    14
+                                ],
+                                "minimum": 0,
+                                "maximum": 365
+                            }
+                        },
+                        "required": [
+                            "amount",
+                            "currency",
+                            "interval"
+                        ]
                     },
                     "status": {
                         "description": "Plan lifecycle status. Defaults to draft when omitted.",
@@ -11275,9 +11904,7 @@
                 },
                 "required": [
                     "name",
-                    "price",
-                    "currency",
-                    "interval"
+                    "price"
                 ],
                 "title": "StorePlanRequest"
             },
@@ -11320,6 +11947,10 @@
                                 "plans.create",
                                 "plans.update",
                                 "plans.delete",
+                                "features.view",
+                                "features.create",
+                                "features.update",
+                                "features.delete",
                                 "subscriptions.view",
                                 "subscriptions.create",
                                 "subscriptions.change_plan",
@@ -11332,6 +11963,8 @@
                                 "invoices.pay",
                                 "invoices.void",
                                 "invoices.delete",
+                                "payments.view",
+                                "payments.verify",
                                 "api_keys.view",
                                 "api_keys.create",
                                 "api_keys.update",
@@ -11366,61 +11999,6 @@
                     "name"
                 ],
                 "title": "StoreRoleRequest"
-            },
-            "StoreSettingRequest": {
-                "type": "object",
-                "description": "Validate a new landlord platform setting.",
-                "properties": {
-                    "group": {
-                        "type": "string",
-                        "description": "Setting group used to organize the catalog.",
-                        "pattern": "^[a-z][a-z0-9_]*$",
-                        "examples": [
-                            "general"
-                        ],
-                        "maxLength": 50
-                    },
-                    "key": {
-                        "type": "string",
-                        "description": "Unique dotted setting key. Immutable after create.",
-                        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$",
-                        "examples": [
-                            "app.name"
-                        ],
-                        "maxLength": 100
-                    },
-                    "type": {
-                        "description": "Stored value type.",
-                        "examples": [
-                            "string"
-                        ],
-                        "$ref": "#/components/schemas/SettingType"
-                    },
-                    "value": {
-                        "type": "string",
-                        "description": "Setting value. Shape must match type.",
-                        "examples": [
-                            "Mercora"
-                        ]
-                    },
-                    "description": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "description": "Optional landlord note.",
-                        "examples": [
-                            "Platform display name"
-                        ]
-                    }
-                },
-                "required": [
-                    "group",
-                    "key",
-                    "type",
-                    "value"
-                ],
-                "title": "StoreSettingRequest"
             },
             "StoreStateRequest": {
                 "type": "object",
@@ -11764,6 +12342,35 @@
                     "expired"
                 ],
                 "title": "SubscriptionStatus"
+            },
+            "SyncPlanFeaturesRequest": {
+                "type": "object",
+                "description": "Validate entitlement features attached to a plan.",
+                "properties": {
+                    "features": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "feature_id": {
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "feature_id",
+                                "value"
+                            ]
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": [
+                    "features"
+                ],
+                "title": "SyncPlanFeaturesRequest"
             },
             "SyncRolesRequest": {
                 "type": "object",
@@ -12147,6 +12754,33 @@
                 },
                 "title": "UpdateCurrencyRequest"
             },
+            "UpdateFeatureRequest": {
+                "type": "object",
+                "description": "Validate an update to an entitlement feature.",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/FeatureType"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "title": "UpdateFeatureRequest"
+            },
             "UpdateInvoiceRequest": {
                 "type": "object",
                 "description": "Validate an update to an open landlord invoice.",
@@ -12240,6 +12874,35 @@
                 },
                 "title": "UpdateNoticeRequest"
             },
+            "UpdatePlanPriceRequest": {
+                "type": "object",
+                "description": "Validate an update to a plan price.",
+                "properties": {
+                    "currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "interval": {
+                        "$ref": "#/components/schemas/PlanInterval"
+                    },
+                    "interval_count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 36
+                    },
+                    "trial_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 365
+                    }
+                },
+                "title": "UpdatePlanPriceRequest"
+            },
             "UpdatePlanRequest": {
                 "type": "object",
                 "description": "Validate an update to a landlord plan.",
@@ -12261,39 +12924,6 @@
                         "examples": [
                             "For growing stores"
                         ]
-                    },
-                    "price": {
-                        "type": "integer",
-                        "description": "Price in the smallest currency unit (cents).",
-                        "examples": [
-                            7900
-                        ],
-                        "minimum": 0
-                    },
-                    "currency": {
-                        "type": "string",
-                        "description": "ISO 4217 currency code.",
-                        "examples": [
-                            "USD"
-                        ],
-                        "minLength": 3,
-                        "maxLength": 3
-                    },
-                    "interval": {
-                        "description": "Billing interval.",
-                        "examples": [
-                            "yearly"
-                        ],
-                        "$ref": "#/components/schemas/PlanInterval"
-                    },
-                    "trial_days": {
-                        "type": "integer",
-                        "description": "Number of trial days before billing starts.",
-                        "examples": [
-                            14
-                        ],
-                        "minimum": 0,
-                        "maximum": 365
                     },
                     "status": {
                         "description": "Plan lifecycle status.",
@@ -12334,6 +12964,38 @@
                 },
                 "title": "UpdatePlanRequest"
             },
+            "UpdateProfileRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Display name.",
+                        "examples": [
+                            "Ada Lovelace"
+                        ],
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Unique login email.",
+                        "examples": [
+                            "ada@mercora.test"
+                        ],
+                        "maxLength": 255
+                    },
+                    "avatar": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Optional profile image. Replaces the current avatar when provided."
+                    }
+                },
+                "title": "UpdateProfileRequest"
+            },
             "UpdateRoleRequest": {
                 "type": "object",
                 "description": "Validate an update to a landlord role.",
@@ -12373,6 +13035,10 @@
                                 "plans.create",
                                 "plans.update",
                                 "plans.delete",
+                                "features.view",
+                                "features.create",
+                                "features.update",
+                                "features.delete",
                                 "subscriptions.view",
                                 "subscriptions.create",
                                 "subscriptions.change_plan",
@@ -12385,6 +13051,8 @@
                                 "invoices.pay",
                                 "invoices.void",
                                 "invoices.delete",
+                                "payments.view",
+                                "payments.verify",
                                 "api_keys.view",
                                 "api_keys.create",
                                 "api_keys.update",
@@ -12417,45 +13085,60 @@
                 },
                 "title": "UpdateRoleRequest"
             },
-            "UpdateSettingRequest": {
+            "UpdateSettingsDomainRequest": {
                 "type": "object",
-                "description": "Validate an update to a landlord platform setting.",
+                "description": "Validate a domain settings update payload.",
                 "properties": {
-                    "group": {
+                    "platform.name": {
                         "type": "string",
-                        "description": "Setting group used to organize the catalog.",
-                        "pattern": "^[a-z][a-z0-9_]*$",
-                        "examples": [
-                            "mail"
-                        ],
-                        "maxLength": 50
+                        "maxLength": 255
                     },
-                    "type": {
-                        "description": "Stored value type.",
-                        "examples": [
-                            "boolean"
-                        ],
-                        "$ref": "#/components/schemas/SettingType"
-                    },
-                    "value": {
-                        "type": "string",
-                        "description": "Setting value. Shape must match type.",
-                        "examples": [
-                            false
-                        ]
-                    },
-                    "description": {
+                    "platform.support_email": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "Optional landlord note.",
-                        "examples": [
-                            "Disable public registration"
-                        ]
+                        "format": "email",
+                        "maxLength": 255
+                    },
+                    "platform.support_phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 50
+                    },
+                    "platform.maintenance_mode": {
+                        "type": "boolean"
+                    },
+                    "platform.maintenance_message": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "registration.tenant_registration_enabled": {
+                        "type": "boolean"
+                    },
+                    "registration.default_plan_slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "localization.default_currency": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 3
+                    },
+                    "localization.default_timezone": {
+                        "type": "string",
+                        "maxLength": 100
                     }
                 },
-                "title": "UpdateSettingRequest"
+                "title": "UpdateSettingsDomainRequest"
             },
             "UpdateStateRequest": {
                 "type": "object",
@@ -12534,23 +13217,6 @@
                 },
                 "title": "UpdateStateRequest"
             },
-            "UpdateSubscriptionRequest": {
-                "type": "object",
-                "description": "Validate a plan change on a landlord subscription.",
-                "properties": {
-                    "plan_id": {
-                        "type": "integer",
-                        "description": "Active catalog plan to switch to.",
-                        "examples": [
-                            2
-                        ]
-                    }
-                },
-                "required": [
-                    "plan_id"
-                ],
-                "title": "UpdateSubscriptionRequest"
-            },
             "UpdateTenantRequest": {
                 "type": "object",
                 "description": "Validate an update to a landlord tenant.",
@@ -12608,13 +13274,6 @@
                             "ada@mercora.test"
                         ],
                         "maxLength": 255
-                    },
-                    "password": {
-                        "type": "string",
-                        "description": "Replacement password. Hashed before storage.",
-                        "examples": [
-                            "password"
-                        ]
                     }
                 },
                 "title": "UpdateUserRequest"
@@ -12689,6 +13348,9 @@
                         ],
                         "format": "date-time"
                     },
+                    "avatar_url": {
+                        "type": "string"
+                    },
                     "roles": {
                         "type": "array",
                         "items": {}
@@ -12699,7 +13361,8 @@
                     "name",
                     "email",
                     "is_active",
-                    "email_verified_at"
+                    "email_verified_at",
+                    "avatar_url"
                 ],
                 "title": "UserResource"
             }

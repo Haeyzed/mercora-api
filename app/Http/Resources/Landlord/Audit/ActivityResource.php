@@ -42,9 +42,9 @@ class ActivityResource extends JsonResource
     }
 
     /**
-     * @return JsonResource|array{id: mixed, type: string}|null
+     * @return UserResource|TenantResource|array{id: mixed, type: string}|null
      */
-    private function morphResource(?Model $model): JsonResource|array|null
+    private function morphResource(?Model $model): UserResource|TenantResource|array|null
     {
         return match (true) {
             $model instanceof User => new UserResource($model),

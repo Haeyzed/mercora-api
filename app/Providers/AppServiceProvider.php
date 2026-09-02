@@ -14,6 +14,14 @@ use App\Models\Shared\State;
 use App\Models\Shared\Timezone;
 use App\Policies\Landlord\RolePolicy;
 use App\Policies\Landlord\WorldPolicy;
+use App\Settings\Landlord\BillingDomain;
+use App\Settings\Landlord\LocalizationDomain;
+use App\Settings\Landlord\MailDomain;
+use App\Settings\Landlord\PlatformDomain;
+use App\Settings\Landlord\RegistrationDomain;
+use App\Settings\Landlord\SecurityDomain;
+use App\Settings\Landlord\TenancyDomain;
+use App\Support\Settings\SettingsRegistry;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,13 +34,30 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(SettingsRegistry::class, function (): SettingsRegistry {
+            $registry = new SettingsRegistry;
+            $registry->register(new PlatformDomain);
+            $registry->register(new RegistrationDomain);
+            $registry->register(new LocalizationDomain);
+            $registry->register(new BillingDomain);
+            $registry->register(new MailDomain);
+            $registry->register(new SecurityDomain);
+            $registry->register(new TenancyDomain);
+
+            return $registry;
+        });
     }
 
     public function boot(): void
     {
         RateLimiter::for('landlord-login', function (Request $request) {
             return Limit::perMinute(5)->by(Str::transliterate(
+                Str::lower($request->string('email')->toString()).'|'.$request->ip()
+            ));
+        });
+
+        RateLimiter::for('landlord-auth', function (Request $request) {
+            return Limit::perMinute(6)->by(Str::transliterate(
                 Str::lower($request->string('email')->toString()).'|'.$request->ip()
             ));
         });

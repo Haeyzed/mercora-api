@@ -5,135 +5,64 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Landlord\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Landlord\Settings\DestroyManyRequest;
-use App\Http\Requests\Landlord\Settings\RestoreManyRequest;
-use App\Http\Requests\Landlord\Settings\StoreSettingRequest;
-use App\Http\Requests\Landlord\Settings\UpdateSettingRequest;
-use App\Http\Resources\Landlord\Settings\SettingResource;
+use App\Http\Requests\Landlord\Settings\UpdateSettingsDomainRequest;
+use App\Http\Resources\Landlord\Settings\SettingsDomainResource;
 use App\Models\Landlord\Setting;
 use App\Services\Landlord\Settings\SettingService;
+use App\Support\Settings\SettingsManager;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\QueryParameter;
-use Dedoc\Scramble\Attributes\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response as HttpResponse;
 
+/**
+ * Landlord settings domains backed by schema definitions.
+ */
 #[Group('Landlord Settings')]
 class SettingController extends Controller
 {
-    public function __construct(private SettingService $settingService) {}
+    public function __construct(
+        private SettingService $settingService,
+        private SettingsManager $settings,
+    ) {}
 
     /**
-     * List settings.
+     * List settings domains with current values.
      *
-     * @return AnonymousResourceCollection<int, SettingResource>
+     * @return AnonymousResourceCollection<int, SettingsDomainResource>
      */
-    #[Endpoint(operationId: 'listLandlordSettings', title: 'List settings')]
-    #[QueryParameter('filter[group]', description: 'Exact setting group.', type: 'string')]
-    #[QueryParameter('filter[key]', description: 'Exact setting key.', type: 'string')]
-    #[QueryParameter('filter[type]', description: 'Exact setting type.', type: 'string')]
-    #[QueryParameter('search', description: 'Partial match across key, group, and description.', type: 'string')]
-    #[QueryParameter('page', description: 'Page number.', type: 'int')]
-    #[QueryParameter('per_page', description: 'Items per page. Maximum 100.', type: 'int')]
-    public function index(Request $request): AnonymousResourceCollection
+    #[Endpoint(operationId: 'listLandlordSettingsDomains', title: 'List settings domains')]
+    public function index(): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Setting::class);
 
-        return SettingResource::collection($this->settingService->paginate($request));
+        return SettingsDomainResource::collection(
+            collect($this->settings->domains())->map(
+                fn (string $domain) => $this->settingService->showDomain($domain),
+            ),
+        );
     }
 
     /**
-     * Create a setting.
+     * Show a settings domain.
      */
-    #[Endpoint(operationId: 'storeLandlordSetting', title: 'Create a setting')]
-    #[Response(201)]
-    public function store(StoreSettingRequest $request): JsonResponse
+    #[Endpoint(operationId: 'showLandlordSettingsDomain', title: 'Show a settings domain')]
+    public function show(string $domain): SettingsDomainResource
     {
-        $this->authorize('create', Setting::class);
+        $this->authorize('viewAny', Setting::class);
 
-        return $this->settingService
-            ->store($request->validated())
-            ->toResource(SettingResource::class)
-            ->response()
-            ->setStatusCode(201);
+        return new SettingsDomainResource($this->settingService->showDomain($domain));
     }
 
     /**
-     * Show a setting.
+     * Update a settings domain.
      */
-    #[Endpoint(operationId: 'showLandlordSetting', title: 'Show a setting')]
-    public function show(Setting $setting): SettingResource
+    #[Endpoint(operationId: 'updateLandlordSettingsDomain', title: 'Update a settings domain')]
+    public function update(UpdateSettingsDomainRequest $request, string $domain): SettingsDomainResource
     {
-        $this->authorize('view', $setting);
+        $this->authorize('update', Setting::class);
 
-        return $setting->toResource(SettingResource::class);
-    }
-
-    /**
-     * Update a setting.
-     */
-    #[Endpoint(operationId: 'updateLandlordSetting', title: 'Update a setting')]
-    public function update(UpdateSettingRequest $request, Setting $setting): SettingResource
-    {
-        $this->authorize('update', $setting);
-
-        return $this->settingService
-            ->update($setting, $request->validated())
-            ->toResource(SettingResource::class);
-    }
-
-    /**
-     * Soft delete a setting.
-     */
-    #[Endpoint(operationId: 'destroyLandlordSetting', title: 'Delete a setting')]
-    public function destroy(Setting $setting): HttpResponse
-    {
-        $this->authorize('delete', $setting);
-
-        $this->settingService->destroy($setting);
-
-        return response()->noContent();
-    }
-
-    /**
-     * Restore a soft-deleted setting.
-     */
-    #[Endpoint(operationId: 'restoreLandlordSetting', title: 'Restore a setting')]
-    public function restore(Setting $setting): SettingResource
-    {
-        $this->authorize('restore', $setting);
-
-        return $this->settingService
-            ->restore($setting)
-            ->toResource(SettingResource::class);
-    }
-
-    /**
-     * Soft delete many settings.
-     */
-    #[Endpoint(operationId: 'destroyManyLandlordSettings', title: 'Delete many settings')]
-    public function destroyMany(DestroyManyRequest $request): HttpResponse
-    {
-        $this->authorize('delete', Setting::class);
-
-        $this->settingService->destroyMany($request->ids());
-
-        return response()->noContent();
-    }
-
-    /**
-     * Restore many soft-deleted settings.
-     */
-    #[Endpoint(operationId: 'restoreManyLandlordSettings', title: 'Restore many settings')]
-    public function restoreMany(RestoreManyRequest $request): HttpResponse
-    {
-        $this->authorize('restore', Setting::class);
-
-        $this->settingService->restoreMany($request->ids());
-
-        return response()->noContent();
+        return new SettingsDomainResource(
+            $this->settingService->updateDomain($domain, $request->settingsPayload()),
+        );
     }
 }

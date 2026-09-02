@@ -18,7 +18,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |
 | app/Providers/TenancyServiceProvider.php | .ai/rules/providers.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
-| app/Http/Controllers/Landlord/Settings/** | .ai/rules/settings.md |
+| app/Http/Controllers/Landlord/Settings/**, app/Support/Settings/**, app/Settings/** | .ai/rules/settings.md |
 | app/Models/Shared/** | .ai/rules/shared.md |
 | app/Http/Controllers/Landlord/Subscriptions/** | .ai/rules/subscriptions.md |
 | app/Http/Controllers/Landlord/Tenants/** | .ai/rules/tenants.md |

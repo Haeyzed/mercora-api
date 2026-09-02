@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property-read array{label: string, value: int|string} $resource
+ * @property Option $resource
  */
 class OptionResource extends JsonResource
 {
@@ -17,9 +17,19 @@ class OptionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /** @var Option|array{label: string, value: int|string} $option */
+        $option = $this->resource;
+
+        if ($option instanceof Option) {
+            return [
+                'label' => $option->label,
+                'value' => $option->value,
+            ];
+        }
+
         return [
-            'label' => $this->resource['label'],
-            'value' => $this->resource['value'],
+            'label' => $option['label'],
+            'value' => $option['value'],
         ];
     }
 }

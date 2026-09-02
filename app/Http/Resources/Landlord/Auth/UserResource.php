@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Landlord\Auth;
 
+use App\Enums\Media\MediaCollection;
 use App\Models\Landlord\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +25,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'is_active' => $this->is_active,
             'email_verified_at' => $this->email_verified_at,
+            'avatar_url' => $this->getFirstMediaUrl(MediaCollection::Avatar->value),
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')->values()),
         ];
     }
