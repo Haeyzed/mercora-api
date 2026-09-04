@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 /**
  * Authenticates landlord users and manages their account profile.
@@ -140,7 +141,8 @@ class AuthService
     /**
      * Update the authenticated landlord user's profile and optional avatar.
      *
-     * @param  array{name?: string, email?: string}  $data
+     * @param array{name?: string, email?: string} $data
+     * @throws Throwable
      */
     public function updateProfile(User $user, array $data, ?UploadedFile $avatar = null): User
     {
