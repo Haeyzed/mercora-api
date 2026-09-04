@@ -7,7 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Landlord/ApiKeyController.php | .ai/rules/api-keys.md |
 | app/Http/Controllers/**, app/Http/Resources/** | .ai/rules/api.md |
 | app/Http/Controllers/Landlord/ActivityController.php | .ai/rules/audit.md |
-| app/Services/Landlord/AuthService.php | .ai/rules/auth.md |
+| app/Services/Landlord/AuthService.php, app/Services/Landlord/SubscriptionService.php | .ai/rules/auth.md |
 | app/Http/Controllers/Landlord/InvoiceController.php | .ai/rules/billing.md |
 | app/Models/Concerns/** | .ai/rules/concerns.md |
 | app/Services/Landlord/InvoiceService.php | .ai/rules/landlord-billing.md |

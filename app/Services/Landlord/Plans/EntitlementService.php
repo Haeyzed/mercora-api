@@ -6,7 +6,6 @@ namespace App\Services\Landlord\Plans;
 
 use App\Enums\Landlord\FeatureType;
 use App\Models\Landlord\Feature;
-use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
 use Illuminate\Support\Facades\Cache;
@@ -20,8 +19,9 @@ use Illuminate\Support\Facades\Cache;
  * - Entitlements are read from the tenant's current subscription and its plan features.
  * - Feature values are typed according to {@see FeatureType} (boolean, integer, unlimited, string).
  * - Missing subscription, plan, or feature key yields null/false for access checks.
+ * - Cache entries are versioned per tenant so {@see forget()} invalidates without knowing feature keys.
  *
- * Side effects: reads and invalidates cache entries keyed by tenant and feature.
+ * Side effects: reads and invalidates cache entries keyed by tenant, version, and feature.
  */
 class EntitlementService
 {
@@ -52,12 +52,14 @@ class EntitlementService
     /**
      * Resolve the typed feature value for a tenant, or null when not entitled.
      *
-     * Results are cached for one hour per tenant and feature key.
+     * Results are cached for one hour per tenant, entitlement version, and feature key.
      */
     public function value(Tenant $tenant, string $key): mixed
     {
+        $version = $this->version($tenant);
+
         return Cache::remember(
-            "tenant.{$tenant->id}.feature.{$key}",
+            $this->cacheKey($tenant, $version, $key),
             now()->addHour(),
             function () use ($tenant, $key): mixed {
                 $subscription = Subscription::query()
@@ -89,24 +91,28 @@ class EntitlementService
     }
 
     /**
-     * Invalidate cached feature values for all features on the tenant's current plan.
-     *
-     * No-op when the tenant has no current subscription or plan.
+     * Invalidate cached feature values for the tenant by bumping the entitlement version.
      */
     public function forget(Tenant $tenant): void
     {
-        $subscription = Subscription::query()
-            ->where('tenant_id', $tenant->id)
-            ->current()
-            ->with('plan')
-            ->first();
+        $versionKey = $this->versionKey($tenant);
+        $current = (int) Cache::get($versionKey, 0);
 
-        if ($subscription?->plan === null) {
-            return;
-        }
+        Cache::forever($versionKey, $current + 1);
+    }
 
-        foreach ($subscription->plan->features()->get() as $feature) {
-            Cache::forget("tenant.{$tenant->id}.feature.{$feature->key}");
-        }
+    private function version(Tenant $tenant): int
+    {
+        return (int) Cache::get($this->versionKey($tenant), 0);
+    }
+
+    private function versionKey(Tenant $tenant): string
+    {
+        return "tenant.{$tenant->id}.entitlements_version";
+    }
+
+    private function cacheKey(Tenant $tenant, int $version, string $key): string
+    {
+        return "tenant.{$tenant->id}.entitlements.v{$version}.{$key}";
     }
 }

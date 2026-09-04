@@ -99,6 +99,8 @@ class InvoiceService
      * When due date is omitted, applies {@see billing.grace_days}. When notes are omitted, uses
      * {@see billing.invoice_footer} when configured.
      *
+     * @param  int|null  $amount  Override snapshotted amount (e.g. prorated plan-change charge).
+     *
      * @throws ValidationException When the subscription is not current.
      * @throws UniqueConstraintViolationException When a concurrent insert races and no existing row is found.
      */
@@ -108,6 +110,7 @@ class InvoiceService
         ?CarbonInterface $periodEnd = null,
         ?CarbonInterface $dueAt = null,
         ?string $notes = null,
+        ?int $amount = null,
     ): Invoice {
         $this->ensureCurrent($subscription);
 
@@ -129,7 +132,7 @@ class InvoiceService
                 'subscription_id' => $subscription->id,
                 'number' => $this->nextNumber(),
                 'status' => InvoiceStatus::Open,
-                'amount' => $subscription->price,
+                'amount' => $amount ?? $subscription->price,
                 'currency' => $subscription->currency,
                 'issued_at' => now(),
                 'period_starts_at' => $periodStart,

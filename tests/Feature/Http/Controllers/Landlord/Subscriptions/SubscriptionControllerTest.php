@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\Landlord\InvoiceStatus;
+use App\Enums\Landlord\PaymentStatus;
 use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
+use App\Models\Landlord\Payment;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
@@ -290,6 +293,64 @@ describe('changePlan', function () {
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['plan_id']);
     });
+
+    it('issues a prorated invoice when proration is enabled', function () {
+        $this->travelTo('2026-08-16 00:00:00');
+
+        app(SettingService::class)->updateDomain('subscriptions', [
+            'subscriptions.prorate_plan_changes' => true,
+        ]);
+
+        $subscription = Subscription::factory()->create([
+            'status' => SubscriptionStatus::Active,
+            'price' => 2900,
+            'currency' => 'USD',
+            'starts_at' => '2026-08-01 00:00:00',
+            'ends_at' => '2026-08-31 00:00:00',
+        ]);
+
+        $plan = Plan::factory()->active()->withPrice([
+            'amount' => 6000,
+            'currency' => 'USD',
+            'interval' => PlanInterval::Monthly,
+            'trial_days' => 0,
+        ])->create();
+
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/change-plan", [
+            'plan_id' => $plan->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.price', 6000)
+            ->assertJsonPath('data.status', 'pending_payment');
+
+        // 15 remaining days of 30-day period → half of 6000
+        $this->assertDatabaseHas('invoices', [
+            'subscription_id' => $subscription->id,
+            'amount' => 3000,
+            'status' => 'open',
+        ]);
+    });
+
+    it('does not issue a proration invoice when proration is disabled', function () {
+        app(SettingService::class)->updateDomain('subscriptions', [
+            'subscriptions.prorate_plan_changes' => false,
+        ]);
+
+        $subscription = Subscription::factory()->create([
+            'status' => SubscriptionStatus::Active,
+            'price' => 2900,
+        ]);
+        $plan = Plan::factory()->active()->withPrice([
+            'amount' => 7900,
+            'trial_days' => 0,
+        ])->create();
+
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/change-plan", [
+            'plan_id' => $plan->id,
+        ])->assertOk();
+
+        $this->assertDatabaseCount('invoices', 0);
+    });
 });
 
 describe('cancel', function () {
@@ -332,6 +393,39 @@ describe('cancel', function () {
             'id' => $subscription->id,
             'status' => SubscriptionStatus::Canceled->value,
         ]);
+    });
+
+    it('voids open invoices and abandons pending payments on immediate cancel', function () {
+        app(SettingService::class)->updateDomain('subscriptions', [
+            'subscriptions.cancel_at_period_end' => false,
+            'subscriptions.allow_immediate_cancel' => true,
+        ]);
+
+        $subscription = Subscription::factory()->create([
+            'status' => SubscriptionStatus::Active,
+        ]);
+
+        $invoice = Invoice::factory()->for($subscription)->create([
+            'status' => InvoiceStatus::Open,
+            'amount' => $subscription->price,
+            'currency' => $subscription->currency,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'tenant_id' => $subscription->tenant_id,
+            'subscription_id' => $subscription->id,
+            'invoice_id' => $invoice->id,
+            'amount' => $invoice->amount,
+            'currency' => $invoice->currency,
+            'status' => PaymentStatus::Pending,
+        ]);
+
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'canceled');
+
+        expect($invoice->fresh()->status)->toBe(InvoiceStatus::Void)
+            ->and($payment->fresh()->status)->toBe(PaymentStatus::Cancelled);
     });
 
     it('returns 422 when the subscription is already canceled', function () {

@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord;
 
+use App\Enums\Landlord\InvoiceStatus;
+use App\Enums\Landlord\PaymentStatus;
 use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\PlanStatus;
 use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
+use App\Models\Landlord\Payment;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\PlanPrice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
 use App\Services\Concerns\PaginatesRequests;
+use App\Services\Landlord\Plans\EntitlementService;
 use App\Services\Landlord\Tenants\TenantService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -35,10 +39,12 @@ use Throwable;
  * - Non-trialing subscriptions issue an invoice on creation; renewals issue invoices without auto-payment.
  * - Immediate cancel clears {@see Subscription::$is_current}; period-end cancel keeps access until {@see Subscription::$ends_at}.
  * - {@see renewAfterPayment()} advances the period only when the invoice period end exceeds the current end.
+ * - Successful payment renewals reactivate suspended tenants and invalidate entitlement cache.
+ * - Immediate / finalized cancel voids open invoices and abandons pending payments.
  *
  * Side effects: creates, updates, cancels, and soft-deletes {@see Subscription} records;
- * delegates invoice issuance to {@see InvoiceService}; may suspend tenants after past-due grace;
- * reads {@see SettingService} for subscription policy.
+ * delegates invoice issuance to {@see InvoiceService}; may suspend or reactivate tenants;
+ * invalidates {@see EntitlementService} cache; reads {@see SettingService} for subscription policy.
  */
 class SubscriptionService
 {
@@ -48,6 +54,7 @@ class SubscriptionService
         private InvoiceService $invoiceService,
         private SettingService $settings,
         private TenantService $tenants,
+        private EntitlementService $entitlements,
     ) {}
 
     /**
@@ -126,6 +133,9 @@ class SubscriptionService
     /**
      * Change the plan on a current subscription and re-snapshot terms.
      *
+     * Preserves the current billing period dates. When prorate_plan_changes is enabled and
+     * the plan price changed, issues an open invoice for the remaining-period fraction of the new price.
+     *
      * @param  array{plan_id?: int, plan_price_id?: int}  $data
      *
      * @throws ModelNotFoundException When the plan or price does not exist.
@@ -151,24 +161,64 @@ class SubscriptionService
             ]);
         }
 
-        if (isset($data['plan_id']) || isset($data['plan_price_id'])) {
-            $plan = Plan::query()->findOrFail($data['plan_id'] ?? $subscription->plan_id);
+        if (! isset($data['plan_id']) && ! isset($data['plan_price_id'])) {
+            return $subscription->refresh();
+        }
 
-            $planPriceId = $data['plan_price_id'] ?? null;
+        $plan = Plan::query()->findOrFail($data['plan_id'] ?? $subscription->plan_id);
 
-            if ($planPriceId === null && isset($data['plan_id']) && (int) $data['plan_id'] !== (int) $subscription->plan_id) {
-                $planPriceId = null;
-            } else {
-                $planPriceId ??= $subscription->plan_price_id;
+        $planPriceId = $data['plan_price_id'] ?? null;
+
+        if ($planPriceId === null && isset($data['plan_id']) && (int) $data['plan_id'] !== (int) $subscription->plan_id) {
+            $planPriceId = null;
+        } else {
+            $planPriceId ??= $subscription->plan_price_id;
+        }
+
+        $planPrice = $this->resolvePlanPrice($plan, $planPriceId);
+
+        $termsChanged = (int) $subscription->plan_id !== (int) $plan->id
+            || (int) $subscription->plan_price_id !== (int) $planPrice->id
+            || (int) $subscription->price !== (int) $planPrice->amount;
+
+        $periodStartsAt = $subscription->starts_at;
+        $periodEndsAt = $subscription->ends_at;
+        $trialEndsAt = $subscription->trial_ends_at;
+        $status = $subscription->status;
+
+        $subscription->fill($this->termsFromPlanPrice($plan, $planPrice, $periodStartsAt ?? now(), $status));
+        $subscription->starts_at = $periodStartsAt;
+        $subscription->ends_at = $periodEndsAt;
+        $subscription->trial_ends_at = $trialEndsAt;
+        $subscription->status = $status;
+
+        $prorate = (bool) $this->settings->value('subscriptions.prorate_plan_changes', false);
+        $prorationAmount = 0;
+
+        if ($prorate && $termsChanged) {
+            $prorationAmount = $this->proratedAmount($subscription, (int) $planPrice->amount);
+
+            if ($prorationAmount > 0) {
+                $subscription->status = SubscriptionStatus::PendingPayment;
             }
-
-            $planPrice = $this->resolvePlanPrice($plan, $planPriceId);
-            $startsAt = $subscription->starts_at ?? now();
-
-            $subscription->fill($this->termsFromPlanPrice($plan, $planPrice, $startsAt, $subscription->status));
         }
 
         $subscription->save();
+
+        if ($prorationAmount > 0) {
+            $this->invoiceService->issueFor(
+                $subscription->refresh(),
+                now(),
+                $subscription->ends_at,
+                amount: $prorationAmount,
+            );
+        }
+
+        $tenant = $subscription->tenant;
+
+        if ($tenant instanceof Tenant) {
+            $this->entitlements->forget($tenant);
+        }
 
         return $subscription->refresh();
     }
@@ -242,7 +292,7 @@ class SubscriptionService
     /**
      * Advance subscription after verified payment. Idempotent per invoice period.
      *
-     * No-op when the invoice has no period end or the subscription is already current through that period.
+     * Always attempts to reactivate a suspended tenant and invalidate entitlements after a successful payment path.
      *
      * @throws ModelNotFoundException When the subscription row disappears during the transaction.
      */
@@ -251,19 +301,27 @@ class SubscriptionService
         return DB::transaction(function () use ($subscription, $invoice): Subscription {
             $subscription = Subscription::query()->whereKey($subscription->id)->lockForUpdate()->firstOrFail();
 
-            if ($invoice->period_ends_at === null) {
-                return $subscription;
+            if ($invoice->period_ends_at !== null
+                && ($subscription->ends_at === null || $subscription->ends_at->lt($invoice->period_ends_at))
+            ) {
+                $subscription->update([
+                    'status' => SubscriptionStatus::Active,
+                    'ends_at' => $invoice->period_ends_at,
+                    'is_current' => 1,
+                ]);
+
+                $subscription = $subscription->refresh();
             }
 
-            if ($subscription->ends_at !== null && $subscription->ends_at->gte($invoice->period_ends_at)) {
-                return $subscription;
-            }
+            $tenant = $subscription->tenant;
 
-            $subscription->update([
-                'status' => SubscriptionStatus::Active,
-                'ends_at' => $invoice->period_ends_at,
-                'is_current' => 1,
-            ]);
+            if ($tenant instanceof Tenant) {
+                if ($tenant->status->canReactivate()) {
+                    $this->tenants->reactivate($tenant);
+                }
+
+                $this->entitlements->forget($tenant);
+            }
 
             return $subscription->refresh();
         });
@@ -413,15 +471,69 @@ class SubscriptionService
             : $periodStart->copy()->addMonths($planPrice->interval_count);
     }
 
+    /**
+     * Remaining-period fraction of the new price for mid-cycle plan changes.
+     */
+    private function proratedAmount(Subscription $subscription, int $newPrice): int
+    {
+        $endsAt = $subscription->ends_at;
+
+        if ($endsAt === null || $endsAt->lte(now())) {
+            return 0;
+        }
+
+        $startsAt = $subscription->starts_at;
+
+        if ($startsAt === null || $startsAt->gte($endsAt)) {
+            $periodSeconds = max(1, (int) now()->diffInSeconds($this->nextPeriodEnd($subscription, now())));
+        } else {
+            $periodSeconds = max(1, (int) $startsAt->diffInSeconds($endsAt));
+        }
+
+        $remainingSeconds = max(0, (int) now()->diffInSeconds($endsAt));
+
+        return max(0, (int) round($newPrice * $remainingSeconds / $periodSeconds));
+    }
+
     private function cancelImmediately(Subscription $subscription): Subscription
     {
+        $this->abandonOpenBilling($subscription);
+
         $subscription->update([
             'status' => SubscriptionStatus::Canceled,
             'canceled_at' => $subscription->canceled_at ?? now(),
             'is_current' => null,
         ]);
 
+        $tenant = $subscription->tenant;
+
+        if ($tenant instanceof Tenant) {
+            $this->entitlements->forget($tenant);
+        }
+
         return $subscription->refresh();
+    }
+
+    /**
+     * Void open invoices and abandon pending payments for a subscription being canceled.
+     */
+    private function abandonOpenBilling(Subscription $subscription): void
+    {
+        Invoice::query()
+            ->where('subscription_id', $subscription->id)
+            ->where('status', InvoiceStatus::Open)
+            ->get()
+            ->each(function (Invoice $invoice): void {
+                $this->invoiceService->void($invoice);
+            });
+
+        Payment::query()
+            ->where('subscription_id', $subscription->id)
+            ->where('status', PaymentStatus::Pending)
+            ->update([
+                'status' => PaymentStatus::Cancelled,
+                'failed_at' => now(),
+            ]);
     }
 
     private function suspendTenantIfPastDueGraceElapsed(Subscription $subscription): void

@@ -4,6 +4,7 @@ use App\Enums\Landlord\InvoiceStatus;
 use App\Enums\Landlord\PaymentStatus;
 use App\Enums\Landlord\PlanInterval;
 use App\Enums\Landlord\SubscriptionStatus;
+use App\Enums\Landlord\TenantStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Payment;
 use App\Models\Landlord\Plan;
@@ -111,6 +112,38 @@ describe('payment verification', function () {
             ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Paid)
             ->and($subscription->fresh()->status)->toBe(SubscriptionStatus::Active)
             ->and($subscription->fresh()->ends_at->equalTo($invoice->period_ends_at))->toBeTrue();
+    });
+
+    it('reactivates a suspended tenant after successful payment verification', function () {
+        $tenant = Tenant::factory()->suspended()->create();
+
+        $subscription = Subscription::factory()->for($tenant)->create([
+            'status' => SubscriptionStatus::PastDue,
+            'ends_at' => now()->subDays(20),
+        ]);
+
+        $invoice = Invoice::factory()->for($subscription)->create([
+            'tenant_id' => $tenant->id,
+            'amount' => $subscription->price,
+            'currency' => $subscription->currency,
+            'period_ends_at' => now()->addMonth(),
+        ]);
+
+        $payment = Payment::factory()->create([
+            'tenant_id' => $tenant->id,
+            'subscription_id' => $subscription->id,
+            'invoice_id' => $invoice->id,
+            'amount' => $invoice->amount,
+            'currency' => $invoice->currency,
+            'status' => PaymentStatus::Pending,
+        ]);
+
+        fakeFlutterwaveVerify($payment->reference, $payment->amount, $payment->currency);
+
+        app(PaymentService::class)->verify($payment);
+
+        expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Active)
+            ->and($tenant->fresh()->status)->toBe(TenantStatus::Active);
     });
 
     it('rejects amount mismatches during verification', function () {

@@ -78,3 +78,20 @@ it('resolves feature values from plan features not plan names', function () {
 
     expect(app(EntitlementService::class)->value($tenant, 'warehouses'))->toBe(5);
 });
+
+it('invalidates cached entitlements when forget bumps the version', function () {
+    $plan = Plan::factory()->active()->create();
+    $feature = Feature::factory()->create(['key' => 'custom_domain', 'type' => FeatureType::Boolean]);
+    $tenant = tenantWithPlanFeature($plan, $feature, true);
+    $entitlements = app(EntitlementService::class);
+
+    expect($entitlements->allows($tenant, 'custom_domain'))->toBeTrue();
+
+    $plan->features()->detach($feature->id);
+
+    expect($entitlements->allows($tenant, 'custom_domain'))->toBeTrue();
+
+    $entitlements->forget($tenant);
+
+    expect($entitlements->allows($tenant, 'custom_domain'))->toBeFalse();
+});
