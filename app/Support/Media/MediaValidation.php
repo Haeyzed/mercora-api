@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Media;
 
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Support\Facades\Schema;
 
 final class MediaValidation

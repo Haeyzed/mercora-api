@@ -8,7 +8,7 @@ use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
 use App\Models\Concerns\AllowsIncludes;
 use App\Models\Concerns\LogsLandlordActivity;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;

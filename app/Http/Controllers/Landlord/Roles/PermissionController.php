@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Landlord\Roles;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Landlord\Roles\PermissionResource;
-use App\Services\Landlord\Permissions\PermissionService;
+use App\Services\Landlord\PermissionService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

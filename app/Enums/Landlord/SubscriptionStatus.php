@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enums\Landlord;
 
-use App\Services\Landlord\Subscriptions\SubscriptionService;
+use App\Services\Landlord\SubscriptionService;
 
 /**
  * Lifecycle status of a tenant subscription on the landlord database.

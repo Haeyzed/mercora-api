@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 

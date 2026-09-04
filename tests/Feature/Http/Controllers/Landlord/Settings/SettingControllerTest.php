@@ -2,7 +2,7 @@
 
 use App\Enums\Landlord\SettingType;
 use App\Models\Landlord\Setting;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 

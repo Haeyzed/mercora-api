@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Landlord\Roles\StoreRoleRequest;
 use App\Http\Requests\Landlord\Roles\UpdateRoleRequest;
 use App\Http\Resources\Landlord\Roles\RoleResource;
-use App\Services\Landlord\Roles\RoleService;
+use App\Services\Landlord\RoleService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;

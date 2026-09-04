@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Audit/**'
+  - 'app/Http/Controllers/Landlord/ActivityController.php'
 ---
 
 # Audit

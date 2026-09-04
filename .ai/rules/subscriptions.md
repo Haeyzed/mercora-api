@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Subscriptions/**'
+  - 'app/Http/Controllers/Landlord/SubscriptionController.php'
 ---
 
 # Subscriptions

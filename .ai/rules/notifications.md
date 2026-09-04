@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Notifications/**'
+  - 'app/Http/Controllers/Landlord/NotificationController.php'
 ---
 
 # Notifications

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Concerns;
 
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;

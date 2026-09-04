@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands\Landlord;
 
-use App\Services\Landlord\Subscriptions\SubscriptionService;
+use App\Services\Landlord\SubscriptionService;
 use Illuminate\Console\Command;
 
 class ProcessSubscriptionsCommand extends Command

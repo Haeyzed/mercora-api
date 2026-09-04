@@ -3,7 +3,7 @@
 use App\Enums\Landlord\NoticeStatus;
 use App\Models\Landlord\Notice;
 use App\Models\Landlord\User;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 

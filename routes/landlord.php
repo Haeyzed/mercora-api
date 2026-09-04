@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Landlord\ApiKeys\ApiKeyController;
-use App\Http\Controllers\Landlord\Audit\ActivityController;
-use App\Http\Controllers\Landlord\Auth\AuthController;
-use App\Http\Controllers\Landlord\Billing\InvoiceController;
-use App\Http\Controllers\Landlord\Notifications\NotificationController;
-use App\Http\Controllers\Landlord\Payments\PaymentController;
+use App\Http\Controllers\Landlord\ActivityController;
+use App\Http\Controllers\Landlord\ApiKeyController;
+use App\Http\Controllers\Landlord\AuthController;
+use App\Http\Controllers\Landlord\InvoiceController;
+use App\Http\Controllers\Landlord\NotificationController;
+use App\Http\Controllers\Landlord\PaymentController;
 use App\Http\Controllers\Landlord\Plans\FeatureController;
 use App\Http\Controllers\Landlord\Plans\PlanController;
 use App\Http\Controllers\Landlord\Plans\PlanPriceController;
 use App\Http\Controllers\Landlord\Roles\PermissionController;
 use App\Http\Controllers\Landlord\Roles\RoleController;
-use App\Http\Controllers\Landlord\Settings\SettingController;
-use App\Http\Controllers\Landlord\Subscriptions\SubscriptionController;
+use App\Http\Controllers\Landlord\SettingController;
+use App\Http\Controllers\Landlord\SubscriptionController;
 use App\Http\Controllers\Landlord\Tenants\DomainController;
 use App\Http\Controllers\Landlord\Tenants\TenantController;
-use App\Http\Controllers\Landlord\Users\UserController;
+use App\Http\Controllers\Landlord\UserController;
 use App\Http\Controllers\Shared\World\CityController;
 use App\Http\Controllers\Shared\World\CountryController;
 use App\Http\Controllers\Shared\World\CurrencyController;

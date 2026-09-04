@@ -9,7 +9,7 @@ use App\Http\Requests\Landlord\Tenants\StoreDomainRequest;
 use App\Http\Resources\Landlord\Tenants\DomainResource;
 use App\Models\Landlord\Domain;
 use App\Models\Landlord\Tenant;
-use App\Services\Landlord\Domains\DomainService;
+use App\Services\Landlord\DomainService;
 use Dedoc\Scramble\Attributes\Endpoint;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;

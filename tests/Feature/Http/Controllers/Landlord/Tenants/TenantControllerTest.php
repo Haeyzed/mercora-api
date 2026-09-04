@@ -6,7 +6,7 @@ use App\Models\Landlord\Domain;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 

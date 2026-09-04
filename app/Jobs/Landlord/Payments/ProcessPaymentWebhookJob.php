@@ -24,20 +24,25 @@ class ProcessPaymentWebhookJob implements ShouldQueue
 
     /**
      * @param  WebhookPayload  $payload  Verified-ready webhook envelope built by the HTTP controller.
+     * @param  string  $provider  Payment provider slug (flutterwave, paystack, stripe).
      */
-    public function __construct(public WebhookPayload $payload) {}
+    public function __construct(
+        public WebhookPayload $payload,
+        public string $provider,
+    ) {}
 
     /**
-     * Run webhook handling for the Flutterwave provider.
+     * Run webhook handling for the configured provider.
      *
      * @throws Throwable When webhook processing fails after logging; triggers queue retry.
      */
     public function handle(PaymentService $paymentService): void
     {
         try {
-            $paymentService->handleWebhook($this->payload, 'flutterwave');
+            $paymentService->handleWebhook($this->payload, $this->provider);
         } catch (Throwable $exception) {
             Log::error('Payment webhook processing failed.', [
+                'provider' => $this->provider,
                 'exception' => $exception::class,
             ]);
 

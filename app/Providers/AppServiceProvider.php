@@ -14,7 +14,7 @@ use App\Models\Shared\State;
 use App\Models\Shared\Timezone;
 use App\Policies\Landlord\RolePolicy;
 use App\Policies\Landlord\WorldPolicy;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use App\Settings\Landlord\ApiDomain;
 use App\Settings\Landlord\BillingDomain;
 use App\Settings\Landlord\ComplianceDomain;

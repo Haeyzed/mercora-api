@@ -15,6 +15,8 @@ use App\Services\Landlord\Payments\Contracts\PaymentDriver;
 enum PaymentProvider: string
 {
     case Flutterwave = 'flutterwave';
+    case Paystack = 'paystack';
+    case Stripe = 'stripe';
 
     /**
      * All provider slug values for validation and configuration lookups.

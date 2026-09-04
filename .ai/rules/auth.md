@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Services/Landlord/Auth/**'
+  - app/Services/Landlord/AuthService.php
 ---
 
 # Auth

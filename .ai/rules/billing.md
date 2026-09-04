@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Billing/**'
+  - 'app/Http/Controllers/Landlord/InvoiceController.php'
 ---
 
 # Billing

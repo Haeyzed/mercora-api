@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Users/**'
+  - 'app/Http/Controllers/Landlord/UserController.php'
 ---
 
 # Users

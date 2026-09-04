@@ -8,7 +8,7 @@ use App\Enums\Landlord\TenantStatus;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Tenant;
 use App\Services\Concerns\PaginatesRequests;
-use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

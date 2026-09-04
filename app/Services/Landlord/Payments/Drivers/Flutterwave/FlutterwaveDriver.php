@@ -119,7 +119,7 @@ class FlutterwaveDriver implements PaymentDriver
     /**
      * Verify transaction status by merchant reference via Flutterwave API.
      *
-     * @throws PaymentException When the API call fails or successful status has amount/currency mismatch.
+     * @throws PaymentException|ConnectionException When the API call fails or successful status has amount/currency mismatch.
      */
     public function verify(string $reference, int $expectedAmount, string $expectedCurrency): PaymentVerificationResult
     {

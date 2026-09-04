@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/ApiKeys/**'
+  - 'app/Http/Controllers/Landlord/ApiKeyController.php'
 ---
 
 # Api Keys

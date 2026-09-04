@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Http/Controllers/Landlord/Settings/**'
+  - 'app/Http/Controllers/Landlord/SettingController.php'
   - 'app/Support/Settings/**'
   - 'app/Settings/**'
 ---

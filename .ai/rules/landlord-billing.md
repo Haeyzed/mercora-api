@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'app/Services/Landlord/Billing/**'
+  - 'app/Services/Landlord/InvoiceService.php'
 ---
 
 # Landlord Billing
