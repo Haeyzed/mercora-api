@@ -41,6 +41,11 @@ final class RegistrationDomain implements SettingsSchema
                 default: true,
                 rules: ['sometimes', 'boolean'],
             ),
+            'registration.require_terms_acceptance' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: true,
+                rules: ['sometimes', 'boolean'],
+            ),
             'registration.default_plan_slug' => new SettingDefinition(
                 type: SettingType::String,
                 default: null,
@@ -56,6 +61,16 @@ final class RegistrationDomain implements SettingsSchema
                 type: SettingType::Boolean,
                 default: true,
                 rules: ['sometimes', 'boolean'],
+            ),
+            'registration.send_welcome_email' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: true,
+                rules: ['sometimes', 'boolean'],
+            ),
+            'registration.allowed_email_domains' => new SettingDefinition(
+                type: SettingType::Json,
+                default: [],
+                rules: ['sometimes', 'array'],
             ),
         ];
     }

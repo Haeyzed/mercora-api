@@ -8,6 +8,7 @@ use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
 use App\Models\Concerns\AllowsIncludes;
 use App\Models\Concerns\LogsLandlordActivity;
+use App\Services\Landlord\Settings\SettingService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -75,12 +77,29 @@ class User extends Authenticatable implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
+        if (! $this->shouldGenerateThumbnails()) {
+            return;
+        }
+
         $thumb = config('media.conversions.thumb');
 
         $this->addMediaConversion(MediaConversion::Thumb->value)
             ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
             ->nonQueued()
             ->performOnCollections(MediaCollection::Avatar->value);
+    }
+
+    private function shouldGenerateThumbnails(): bool
+    {
+        try {
+            if (! Schema::hasTable('settings')) {
+                return true;
+            }
+
+            return (bool) app(SettingService::class)->value('storage.generate_thumbnails', true);
+        } catch (\Throwable) {
+            return true;
+        }
     }
 
     /**

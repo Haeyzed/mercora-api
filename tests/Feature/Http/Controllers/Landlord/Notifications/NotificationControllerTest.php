@@ -3,6 +3,7 @@
 use App\Enums\Landlord\NoticeStatus;
 use App\Models\Landlord\Notice;
 use App\Models\Landlord\User;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 
@@ -165,6 +166,23 @@ describe('store', function () {
             ->assertJsonPath('data.status', 'unread');
 
         Mail::assertNothingSent();
+    });
+
+    it('returns 422 when the mail channel is disabled', function () {
+        app(SettingService::class)->updateDomain('notifications', [
+            'notifications.email_enabled' => false,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->postJson('/api/landlord/notifications', [
+            'user_id' => $user->id,
+            'title' => 'Invoice past due',
+            'body' => 'Acme Stores has an open invoice that is past due.',
+            'channel' => 'mail',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['channel']);
     });
 
     it('returns 422 when required notice fields are missing', function () {

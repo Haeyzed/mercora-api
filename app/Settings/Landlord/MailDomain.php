@@ -54,6 +54,18 @@ final class MailDomain implements SettingsSchema
                 nullable: true,
                 rules: ['sometimes', 'nullable', 'email', 'max:255'],
             ),
+            'mail.footer_text' => new SettingDefinition(
+                type: SettingType::String,
+                default: null,
+                nullable: true,
+                rules: ['sometimes', 'nullable', 'string', 'max:1000'],
+            ),
+            'mail.logo_url' => new SettingDefinition(
+                type: SettingType::String,
+                default: null,
+                nullable: true,
+                rules: ['sometimes', 'nullable', 'url', 'max:255'],
+            ),
         ];
     }
 }

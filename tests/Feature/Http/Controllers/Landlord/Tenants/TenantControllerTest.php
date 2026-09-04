@@ -6,6 +6,7 @@ use App\Models\Landlord\Domain;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 
@@ -168,6 +169,20 @@ describe('store', function () {
         ]);
 
         Bus::assertDispatched(ProvisionTenantJob::class);
+    });
+
+    it('skips provisioning when auto provision is disabled', function () {
+        Bus::fake([ProvisionTenantJob::class]);
+
+        app(SettingService::class)->updateDomain('registration', [
+            'registration.auto_provision_tenant' => false,
+        ]);
+
+        $this->postJson('/api/landlord/tenants', tenantPayload())
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'pending');
+
+        Bus::assertNotDispatched(ProvisionTenantJob::class);
     });
 
     it('does not activate a tenant from a client-supplied status', function () {

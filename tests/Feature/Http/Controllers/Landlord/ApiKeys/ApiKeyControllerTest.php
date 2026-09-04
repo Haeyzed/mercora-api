@@ -3,6 +3,7 @@
 use App\Enums\Landlord\ApiKeyStatus;
 use App\Models\Landlord\ApiKey;
 use App\Models\Landlord\User;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -159,6 +160,54 @@ describe('store', function () {
         ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['user_id']);
+    });
+
+    it('returns 422 when API key creation is disabled', function () {
+        app(SettingService::class)->updateDomain('api', [
+            'api.keys_enabled' => false,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->postJson('/api/landlord/api-keys', [
+            'user_id' => $user->id,
+            'name' => 'CI deploy',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    });
+
+    it('returns 422 when the user is at the API key limit', function () {
+        app(SettingService::class)->updateDomain('api', [
+            'api.max_keys_per_user' => 1,
+        ]);
+
+        $user = User::factory()->create();
+        ApiKey::factory()->for($user)->create();
+
+        $this->postJson('/api/landlord/api-keys', [
+            'user_id' => $user->id,
+            'name' => 'Second key',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_id']);
+    });
+
+    it('applies the default TTL when expires_at is omitted', function () {
+        $this->travelTo(now()->parse('2026-09-02 12:00:00'));
+
+        app(SettingService::class)->updateDomain('api', [
+            'api.default_key_ttl_days' => 30,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->postJson('/api/landlord/api-keys', [
+            'user_id' => $user->id,
+            'name' => 'TTL key',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.expires_at', '2026-10-02T12:00:00.000000Z');
     });
 });
 

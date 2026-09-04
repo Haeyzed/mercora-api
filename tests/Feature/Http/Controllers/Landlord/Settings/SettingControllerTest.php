@@ -10,7 +10,7 @@ uses(LazilyRefreshDatabase::class);
 
 describe('index', function () {
     it('lists all settings domains with defaults', function () {
-        $response = $this->getJson('/api/landlord/settings')->assertOk()->assertJsonCount(7, 'data');
+        $response = $this->getJson('/api/landlord/settings')->assertOk()->assertJsonCount(12, 'data');
 
         $byDomain = collect($response->json('data'))->keyBy('domain');
 
@@ -22,18 +22,70 @@ describe('index', function () {
             'mail',
             'security',
             'tenancy',
+            'notifications',
+            'api',
+            'storage',
+            'subscriptions',
+            'compliance',
         ])
             ->and($byDomain['platform']['settings']['platform.name'])->toBe('Mercora')
+            ->and($byDomain['platform']['settings']['platform.primary_color'])->toBe('#0F172A')
             ->and($byDomain['registration']['settings']['registration.tenant_registration_enabled'])->toBeTrue()
             ->and($byDomain['localization']['settings']['localization.default_currency'])->toBe('USD')
+            ->and($byDomain['localization']['settings']['localization.date_format'])->toBe('Y-m-d')
+            ->and($byDomain['localization']['settings']['localization.datetime_format'])->toBe('Y-m-d H:i')
+            ->and($byDomain['localization']['settings']['localization.display_date_format'])->toBe('M j, Y')
             ->and($byDomain['billing']['settings']['billing.invoice_prefix'])->toBe('INV')
+            ->and($byDomain['billing']['settings']['billing.invoice_suffix'])->toBeNull()
             ->and($byDomain['mail']['settings']['mail.from_name'])->toBe('Mercora')
             ->and($byDomain['security']['settings']['security.password_min_length'])->toBe(8)
-            ->and($byDomain['tenancy']['settings']['tenancy.allow_custom_domains'])->toBeTrue();
+            ->and($byDomain['security']['settings']['security.require_strong_passwords'])->toBeFalse()
+            ->and($byDomain['tenancy']['settings']['tenancy.allow_custom_domains'])->toBeTrue()
+            ->and($byDomain['notifications']['settings']['notifications.email_enabled'])->toBeTrue()
+            ->and($byDomain['api']['settings']['api.keys_enabled'])->toBeTrue()
+            ->and($byDomain['storage']['settings']['storage.image_max_kb'])->toBe(10240)
+            ->and($byDomain['subscriptions']['settings']['subscriptions.cancel_at_period_end'])->toBeTrue()
+            ->and($byDomain['compliance']['settings']['compliance.activity_log_retention_days'])->toBe(365);
     });
 });
 
 describe('show', function () {
+    it('returns localization date formats with defaults', function () {
+        $settings = $this->getJson('/api/landlord/settings/localization')
+            ->assertOk()
+            ->json('data.settings');
+
+        expect($settings['localization.date_format'])->toBe('Y-m-d')
+            ->and($settings['localization.time_format'])->toBe('H:i')
+            ->and($settings['localization.datetime_format'])->toBe('Y-m-d H:i')
+            ->and($settings['localization.display_date_format'])->toBe('M j, Y')
+            ->and($settings['localization.first_day_of_week'])->toBe(1);
+    });
+
+    it('updates localization date format to d/m/Y', function () {
+        $settings = $this->putJson('/api/landlord/settings/localization', [
+            'localization.date_format' => 'd/m/Y',
+            'localization.datetime_format' => 'd/m/Y H:i',
+            'localization.display_date_format' => 'j M Y',
+        ])
+            ->assertOk()
+            ->json('data.settings');
+
+        expect($settings['localization.date_format'])->toBe('d/m/Y')
+            ->and($settings['localization.datetime_format'])->toBe('d/m/Y H:i')
+            ->and($settings['localization.display_date_format'])->toBe('j M Y');
+    });
+
+    it('returns 422 for an unsupported date format', function () {
+        $this->putJson('/api/landlord/settings/localization', [
+            'localization.date_format' => 'invalid',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['localization.date_format']);
+    });
+});
+
+describe('platform show', function () {
     it('returns a domain with schema defaults when unset', function () {
         $settings = $this->getJson('/api/landlord/settings/platform')
             ->assertOk()

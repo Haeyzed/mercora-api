@@ -15,6 +15,7 @@ use App\Services\Landlord\Payments\DTOs\PaymentInitializationData;
 use App\Services\Landlord\Payments\DTOs\PaymentVerificationResult;
 use App\Services\Landlord\Payments\DTOs\WebhookPayload;
 use App\Services\Landlord\Payments\Exceptions\PaymentException;
+use App\Services\Landlord\Settings\SettingService;
 use App\Services\Landlord\Subscriptions\SubscriptionService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -43,6 +44,7 @@ class PaymentService
         private PaymentManager $paymentManager,
         private InvoiceService $invoiceService,
         private SubscriptionService $subscriptionService,
+        private SettingService $settings,
     ) {}
 
     /**
@@ -115,6 +117,9 @@ class PaymentService
             ],
         ]);
 
+        $descriptor = $this->settings->value('billing.statement_descriptor');
+        $title = is_string($descriptor) && $descriptor !== '' ? $descriptor : null;
+
         $result = $driver->initialize(new PaymentInitializationData(
             reference: $reference,
             amount: $invoice->amount,
@@ -123,6 +128,7 @@ class PaymentService
             name: $payer->name,
             redirectUrl: $redirectUrl ?? config('payments.redirect_url'),
             metadata: $payment->metadata ?? [],
+            title: $title,
         ));
 
         $payment->update([

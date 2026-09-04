@@ -7,6 +7,7 @@ namespace App\Services\Landlord\Notifications;
 use App\Enums\Landlord\NoticeChannel;
 use App\Enums\Landlord\NoticeStatus;
 use App\Models\Landlord\Notice;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -20,11 +21,15 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * Invariants:
  * - New notices are created as unread; mail is not sent from this service.
  * - Only unread notices can be updated or marked read.
+ * - Channel creation respects {@see notifications.email_enabled} and {@see notifications.in_app_enabled}.
  *
- * Side effects: creates, updates, soft-deletes, and restores {@see Notice} records.
+ * Side effects: creates, updates, soft-deletes, and restores {@see Notice} records;
+ * reads {@see SettingService} for channel policy.
  */
 class NoticeService
 {
+    public function __construct(private SettingService $settings) {}
+
     /**
      * Paginate notices using model filter, search, and include scopes.
      *
@@ -53,14 +58,23 @@ class NoticeService
      * Record an unread notice. Does not send mail.
      *
      * @param  array{user_id: int, title: string, body: string, channel?: NoticeChannel|string}  $data
+     *
+     * @throws ValidationException When the requested notice channel is disabled.
      */
     public function store(array $data): Notice
     {
+        $channel = $data['channel'] ?? NoticeChannel::InApp;
+        $resolved = $channel instanceof NoticeChannel
+            ? $channel
+            : NoticeChannel::from((string) $channel);
+
+        $this->ensureChannelEnabled($resolved);
+
         return Notice::query()->create([
             'user_id' => $data['user_id'],
             'title' => $data['title'],
             'body' => $data['body'],
-            'channel' => $data['channel'] ?? NoticeChannel::InApp,
+            'channel' => $resolved,
             'status' => NoticeStatus::Unread,
             'read_at' => null,
         ])->load('user');
@@ -168,6 +182,25 @@ class NoticeService
 
         throw ValidationException::withMessages([
             'status' => 'The notice is not unread.',
+        ]);
+    }
+
+    /**
+     * @throws ValidationException When the channel is disabled in settings.
+     */
+    private function ensureChannelEnabled(NoticeChannel $channel): void
+    {
+        $enabled = match ($channel) {
+            NoticeChannel::Mail => (bool) $this->settings->value('notifications.email_enabled', true),
+            NoticeChannel::InApp => (bool) $this->settings->value('notifications.in_app_enabled', true),
+        };
+
+        if ($enabled) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'channel' => ["The {$channel->value} notification channel is disabled."],
         ]);
     }
 

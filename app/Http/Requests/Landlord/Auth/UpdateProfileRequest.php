@@ -40,7 +40,7 @@ class UpdateProfileRequest extends FormRequest
             /**
              * Optional profile image. Replaces the current avatar when provided.
              */
-            'avatar' => MediaValidation::image(required: false),
+            'avatar' => MediaValidation::avatar(required: false),
         ];
     }
 }

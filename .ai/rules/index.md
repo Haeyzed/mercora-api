@@ -16,7 +16,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Landlord/Notifications/** | .ai/rules/notifications.md |
 | app/Http/Controllers/Landlord/Plans/** | .ai/rules/plans.md |
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |
-| app/Providers/TenancyServiceProvider.php | .ai/rules/providers.md |
+| app/Providers/TenancyServiceProvider.php, app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
 | app/Http/Controllers/Landlord/Settings/**, app/Support/Settings/**, app/Settings/** | .ai/rules/settings.md |
 | app/Models/Shared/** | .ai/rules/shared.md |

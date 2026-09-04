@@ -8,6 +8,7 @@ use App\Enums\Media\MediaCollection;
 use App\Http\Resources\Landlord\Auth\LoginPayload;
 use App\Models\Landlord\User;
 use App\Notifications\Landlord\ResetPasswordNotification;
+use App\Services\Landlord\Settings\SettingService;
 use App\Services\Media\MediaService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -27,11 +28,15 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * - Forgot password never reveals whether an email exists.
  * - Password reset and change revoke all issued API tokens.
  *
- * Side effects: creates and deletes Sanctum tokens; stores avatar media; sends mail.
+ * Side effects: creates and deletes Sanctum tokens; stores avatar media; sends mail;
+ * reads {@see SettingService} for token revocation policy.
  */
 class AuthService
 {
-    public function __construct(private MediaService $mediaService) {}
+    public function __construct(
+        private MediaService $mediaService,
+        private SettingService $settings,
+    ) {}
 
     /**
      * Authenticate a landlord user and issue an API token.
@@ -50,9 +55,20 @@ class AuthService
             ]);
         }
 
+        $expiresAt = null;
+        $timeout = max(0, (int) $this->settings->value('security.session_timeout_minutes', 120));
+
+        if ($timeout > 0) {
+            $expiresAt = now()->addMinutes($timeout);
+        }
+
         return new LoginPayload(
             user: $user,
-            token: $user->createToken($credentials['device_name'] ?? 'landlord')->plainTextToken,
+            token: $user->createToken(
+                $credentials['device_name'] ?? 'landlord',
+                ['*'],
+                $expiresAt,
+            )->plainTextToken,
         );
     }
 
@@ -108,7 +124,9 @@ class AuthService
                     'password' => $password,
                 ])->save();
 
-                $user->tokens()->delete();
+                if ($this->settings->value('security.revoke_tokens_on_password_change', true)) {
+                    $user->tokens()->delete();
+                }
             },
         );
 
@@ -153,7 +171,9 @@ class AuthService
     }
 
     /**
-     * Change the authenticated landlord user's password and revoke all tokens.
+     * Change the authenticated landlord user's password.
+     *
+     * Revokes all API tokens when {@see security.revoke_tokens_on_password_change} is enabled.
      *
      * @param  array{current_password: string, password: string}  $data
      *
@@ -171,6 +191,8 @@ class AuthService
             'password' => $data['password'],
         ])->save();
 
-        $user->tokens()->delete();
+        if ($this->settings->value('security.revoke_tokens_on_password_change', true)) {
+            $user->tokens()->delete();
+        }
     }
 }

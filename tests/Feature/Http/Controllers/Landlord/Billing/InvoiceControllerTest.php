@@ -4,6 +4,7 @@ use App\Enums\Landlord\InvoiceStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -138,6 +139,34 @@ describe('store', function () {
             'currency' => 'NGN',
             'status' => InvoiceStatus::Open->value,
         ]);
+    });
+
+    it('uses billing settings for invoice number prefix, suffix, grace days, and footer notes', function () {
+        $this->travelTo('2026-08-29 20:00:00');
+
+        app(SettingService::class)->updateDomain('billing', [
+            'billing.invoice_prefix' => 'MRC',
+            'billing.invoice_suffix' => 'NG',
+            'billing.grace_days' => 7,
+            'billing.invoice_memo' => 'Thank you for your business.',
+            'billing.invoice_footer' => 'Payable within 7 days.',
+        ]);
+
+        $subscription = Subscription::factory()->create([
+            'price' => 5000,
+            'currency' => 'USD',
+        ]);
+
+        $invoice = $this->postJson('/api/landlord/invoices', [
+            'subscription_id' => $subscription->id,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.due_at', '2026-09-05T20:00:00.000000Z')
+            ->assertJsonPath('data.notes', "Thank you for your business.\n\nPayable within 7 days.")
+            ->json('data');
+
+        expect($invoice['number'])->toStartWith('MRC-20260829-')
+            ->and($invoice['number'])->toEndWith('-NG');
     });
 
     it('does not persist client-supplied amount or status', function () {

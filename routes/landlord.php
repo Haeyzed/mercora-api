@@ -33,7 +33,7 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
         Route::post('auth/reset-password', [AuthController::class, 'resetPassword'])->name('auth.reset_password');
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'throttle:landlord-api'])->group(function (): void {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::match(['put', 'patch'], 'auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile');

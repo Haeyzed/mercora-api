@@ -6,6 +6,7 @@ use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -274,10 +275,50 @@ describe('changePlan', function () {
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['status']);
     });
+
+    it('returns 422 when plan changes are disabled', function () {
+        app(SettingService::class)->updateDomain('subscriptions', [
+            'subscriptions.allow_plan_changes' => false,
+        ]);
+
+        $subscription = Subscription::factory()->create();
+        $plan = Plan::factory()->active()->withPrice()->create();
+
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/change-plan", [
+            'plan_id' => $plan->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['plan_id']);
+    });
 });
 
 describe('cancel', function () {
-    it('cancels a current subscription', function () {
+    it('schedules cancellation at period end by default', function () {
+        $this->travelTo('2026-08-29 20:00:00');
+
+        $subscription = Subscription::factory()->create([
+            'status' => SubscriptionStatus::Active,
+            'ends_at' => '2026-09-29 20:00:00',
+        ]);
+
+        $this->postJson("/api/landlord/subscriptions/{$subscription->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.canceled_at', '2026-08-29T20:00:00.000000Z');
+
+        $this->assertDatabaseHas('subscriptions', [
+            'id' => $subscription->id,
+            'status' => SubscriptionStatus::Active->value,
+            'is_current' => 1,
+        ]);
+    });
+
+    it('cancels immediately when period-end cancel is disabled and immediate cancel is allowed', function () {
+        app(SettingService::class)->updateDomain('subscriptions', [
+            'subscriptions.cancel_at_period_end' => false,
+            'subscriptions.allow_immediate_cancel' => true,
+        ]);
+
         $this->travelTo('2026-08-29 20:00:00');
 
         $subscription = Subscription::factory()->create();

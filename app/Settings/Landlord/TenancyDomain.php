@@ -36,6 +36,11 @@ final class TenancyDomain implements SettingsSchema
                 default: true,
                 rules: ['sometimes', 'boolean'],
             ),
+            'tenancy.allow_subdomains' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: true,
+                rules: ['sometimes', 'boolean'],
+            ),
             'tenancy.default_domain_suffix' => new SettingDefinition(
                 type: SettingType::String,
                 default: null,
@@ -56,6 +61,16 @@ final class TenancyDomain implements SettingsSchema
                 type: SettingType::String,
                 default: 'default',
                 rules: ['sometimes', 'string', 'max:100'],
+            ),
+            'tenancy.require_https' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: true,
+                rules: ['sometimes', 'boolean'],
+            ),
+            'tenancy.max_concurrent_provisions' => new SettingDefinition(
+                type: SettingType::Integer,
+                default: 5,
+                rules: ['sometimes', 'integer', 'min:1', 'max:50'],
             ),
         ];
     }

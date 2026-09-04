@@ -9,6 +9,7 @@ use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Payment;
 use App\Models\Landlord\Subscription;
+use App\Services\Landlord\Settings\SettingService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -27,15 +28,18 @@ use Illuminate\Validation\ValidationException;
  * Invariants:
  * - Invoices are issued only for subscriptions in a current status.
  * - Amount and currency are snapshotted from the subscription at issue time.
+ * - Number prefix/suffix and default due date come from billing settings.
  * - Only open invoices can be updated, voided, or marked paid.
  * - Payment settlement requires matching amount and currency on the verified payment.
  * - At most one invoice per subscription billing period (idempotent via period_starts_at).
  *
  * Side effects: creates, updates, voids, soft-deletes, and restores {@see Invoice} records;
- * links paid invoices to {@see Payment} records.
+ * links paid invoices to {@see Payment} records; reads {@see SettingService} for numbering and grace.
  */
 class InvoiceService
 {
+    public function __construct(private SettingService $settings) {}
+
     /**
      * Paginate invoices using model filter, search, and include scopes.
      *
@@ -89,6 +93,8 @@ class InvoiceService
      * Issue an invoice from a subscription snapshot. Idempotent per billing period.
      *
      * Returns an existing invoice when one already exists for the same subscription and period start.
+     * When due date is omitted, applies {@see billing.grace_days}. When notes are omitted, uses
+     * {@see billing.invoice_footer} when configured.
      *
      * @throws ValidationException When the subscription is not current.
      * @throws UniqueConstraintViolationException When a concurrent insert races and no existing row is found.
@@ -110,6 +116,9 @@ class InvoiceService
         if ($existing instanceof Invoice) {
             return $existing->load(['tenant', 'subscription']);
         }
+
+        $dueAt ??= now()->addDays($this->graceDays());
+        $notes ??= $this->defaultNotes();
 
         try {
             return Invoice::query()->create([
@@ -234,15 +243,68 @@ class InvoiceService
     }
 
     /**
-     * Generate a unique invoice number.
+     * Generate a unique invoice number using billing prefix and optional suffix settings.
      */
     private function nextNumber(): string
     {
+        $prefix = $this->sanitizeSegment(
+            (string) $this->settings->value('billing.invoice_prefix', 'INV'),
+            'INV',
+        );
+        $suffix = $this->sanitizeSegment(
+            $this->settings->value('billing.invoice_suffix'),
+            '',
+        );
+
         do {
-            $number = 'INV-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
+            $number = $prefix.'-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
+
+            if ($suffix !== '') {
+                $number .= '-'.$suffix;
+            }
         } while (Invoice::withTrashed()->where('number', $number)->exists());
 
         return $number;
+    }
+
+    /**
+     * Days until payment is due when a due date is not supplied.
+     */
+    private function graceDays(): int
+    {
+        return max(0, (int) $this->settings->value('billing.grace_days', 3));
+    }
+
+    /**
+     * Default invoice notes from memo and footer settings, when present.
+     */
+    private function defaultNotes(): ?string
+    {
+        $parts = [];
+
+        foreach (['billing.invoice_memo', 'billing.invoice_footer'] as $key) {
+            $value = $this->settings->value($key);
+
+            if (is_string($value) && $value !== '') {
+                $parts[] = $value;
+            }
+        }
+
+        return $parts === [] ? null : implode("\n\n", $parts);
+    }
+
+    /**
+     * Keep invoice number segments alphanumeric and dash-safe.
+     */
+    private function sanitizeSegment(mixed $value, string $fallback): string
+    {
+        if (! is_string($value) || $value === '') {
+            return $fallback;
+        }
+
+        $sanitized = strtoupper((string) preg_replace('/[^A-Za-z0-9]+/', '', $value));
+
+        return $sanitized !== '' ? $sanitized : $fallback;
     }
 
     private function perPage(Request $request): int

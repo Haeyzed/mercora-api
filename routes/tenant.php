@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureTenantHttps;
 use App\Http\Middleware\EnsureTenantNotSuspended;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -23,6 +24,7 @@ Route::middleware([
     'web',
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
+    EnsureTenantHttps::class,
     EnsureTenantNotSuspended::class,
 ])->group(function () {
     Route::get('/', function () {

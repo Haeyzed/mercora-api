@@ -2,6 +2,7 @@
 
 use App\Models\Landlord\Domain;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -52,6 +53,50 @@ describe('store', function () {
             'domain' => 'shop.acme.example.com',
             'tenant_id' => $tenant->id,
         ]);
+    });
+
+    it('returns 422 when custom domains are disabled', function () {
+        app(SettingService::class)->updateDomain('tenancy', [
+            'tenancy.allow_custom_domains' => false,
+        ]);
+
+        $tenant = Tenant::factory()->create(['name' => 'Acme Stores']);
+
+        $this->postJson("/api/landlord/tenants/{$tenant->id}/domains", [
+            'domain' => 'shop.acme.example.com',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['domain']);
+    });
+
+    it('returns 422 when the tenant is at the domain limit', function () {
+        app(SettingService::class)->updateDomain('tenancy', [
+            'tenancy.max_domains_per_tenant' => 1,
+        ]);
+
+        $tenant = Tenant::factory()->create(['name' => 'Acme Stores']);
+        Domain::factory()->for($tenant)->create(['domain' => 'acme.example.com']);
+
+        $this->postJson("/api/landlord/tenants/{$tenant->id}/domains", [
+            'domain' => 'shop.acme.example.com',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['domain']);
+    });
+
+    it('returns 422 when platform subdomains are disabled', function () {
+        app(SettingService::class)->updateDomain('tenancy', [
+            'tenancy.default_domain_suffix' => 'mercora.test',
+            'tenancy.allow_subdomains' => false,
+        ]);
+
+        $tenant = Tenant::factory()->create(['name' => 'Acme Stores']);
+
+        $this->postJson("/api/landlord/tenants/{$tenant->id}/domains", [
+            'domain' => 'acme.mercora.test',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['domain']);
     });
 
     it('returns 422 when the domain is missing', function () {

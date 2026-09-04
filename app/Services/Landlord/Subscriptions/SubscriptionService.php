@@ -13,6 +13,8 @@ use App\Models\Landlord\PlanPrice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
 use App\Services\Landlord\Billing\InvoiceService;
+use App\Services\Landlord\Settings\SettingService;
+use App\Services\Landlord\Tenants\TenantService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,15 +33,20 @@ use Illuminate\Validation\ValidationException;
  * - A tenant may have at most one current subscription.
  * - Terms (price, currency, interval) are snapshotted from an active {@see PlanPrice} at create/change time.
  * - Non-trialing subscriptions issue an invoice on creation; renewals issue invoices without auto-payment.
- * - Canceled subscriptions clear {@see Subscription::$is_current}.
+ * - Immediate cancel clears {@see Subscription::$is_current}; period-end cancel keeps access until {@see Subscription::$ends_at}.
  * - {@see renewAfterPayment()} advances the period only when the invoice period end exceeds the current end.
  *
  * Side effects: creates, updates, cancels, and soft-deletes {@see Subscription} records;
- * delegates invoice issuance to {@see InvoiceService}.
+ * delegates invoice issuance to {@see InvoiceService}; may suspend tenants after past-due grace;
+ * reads {@see SettingService} for subscription policy.
  */
 class SubscriptionService
 {
-    public function __construct(private InvoiceService $invoiceService) {}
+    public function __construct(
+        private InvoiceService $invoiceService,
+        private SettingService $settings,
+        private TenantService $tenants,
+    ) {}
 
     /**
      * Paginate subscriptions using model filter, search, and include scopes.
@@ -120,13 +127,25 @@ class SubscriptionService
      * @param  array{plan_id?: int, plan_price_id?: int}  $data
      *
      * @throws ModelNotFoundException When the plan or price does not exist.
-     * @throws ValidationException When the subscription is canceled or no active price exists.
+     * @throws ValidationException When plan changes are disabled, the subscription is canceled, or no active price exists.
      */
     public function changePlan(Subscription $subscription, array $data): Subscription
     {
+        if (! $this->settings->value('subscriptions.allow_plan_changes', true)) {
+            throw ValidationException::withMessages([
+                'plan_id' => ['Plan changes are disabled.'],
+            ]);
+        }
+
         if ($subscription->status === SubscriptionStatus::Canceled) {
             throw ValidationException::withMessages([
                 'status' => 'The subscription is already canceled.',
+            ]);
+        }
+
+        if ($subscription->canceled_at !== null) {
+            throw ValidationException::withMessages([
+                'status' => 'The subscription is scheduled for cancellation.',
             ]);
         }
 
@@ -153,25 +172,36 @@ class SubscriptionService
     }
 
     /**
-     * Cancel a current subscription.
+     * Cancel a current subscription immediately or at period end per settings.
      *
-     * @throws ValidationException When the subscription is already canceled.
+     * @throws ValidationException When the subscription is already canceled or immediate cancel is not allowed.
      */
     public function cancel(Subscription $subscription): Subscription
     {
-        if ($subscription->status === SubscriptionStatus::Canceled) {
+        if ($subscription->status === SubscriptionStatus::Canceled || $subscription->canceled_at !== null) {
             throw ValidationException::withMessages([
                 'status' => 'The subscription is already canceled.',
             ]);
         }
 
-        $subscription->update([
-            'status' => SubscriptionStatus::Canceled,
-            'canceled_at' => now(),
-            'is_current' => null,
-        ]);
+        $cancelAtPeriodEnd = (bool) $this->settings->value('subscriptions.cancel_at_period_end', true);
+        $allowImmediate = (bool) $this->settings->value('subscriptions.allow_immediate_cancel', false);
 
-        return $subscription->refresh();
+        if ($cancelAtPeriodEnd) {
+            $subscription->update([
+                'canceled_at' => now(),
+            ]);
+
+            return $subscription->refresh();
+        }
+
+        if (! $allowImmediate) {
+            throw ValidationException::withMessages([
+                'status' => ['Immediate cancellation is disabled.'],
+            ]);
+        }
+
+        return $this->cancelImmediately($subscription);
     }
 
     /**
@@ -183,6 +213,12 @@ class SubscriptionService
      */
     public function requestRenewal(Subscription $subscription): Subscription
     {
+        if ($subscription->canceled_at !== null) {
+            throw ValidationException::withMessages([
+                'status' => 'The subscription is scheduled for cancellation.',
+            ]);
+        }
+
         if (! in_array($subscription->status, SubscriptionStatus::renewableCases(), true)) {
             throw ValidationException::withMessages([
                 'status' => 'The subscription cannot be renewed.',
@@ -236,11 +272,29 @@ class SubscriptionService
      *
      * Side effects: transitions trialing subscriptions past trial end and active/past-due subscriptions
      * past period end to pending payment or past due, respectively, and issues invoices.
+     * Finalizes period-end cancellations and may suspend tenants after past-due grace.
      */
     public function processDue(): void
     {
         Subscription::query()
             ->current()
+            ->whereNotNull('canceled_at')
+            ->where(function ($query): void {
+                $query->where(function ($inner): void {
+                    $inner->whereNotNull('ends_at')->where('ends_at', '<=', now());
+                })->orWhere(function ($inner): void {
+                    $inner->where('status', SubscriptionStatus::Trialing)
+                        ->whereNotNull('trial_ends_at')
+                        ->where('trial_ends_at', '<=', now());
+                });
+            })
+            ->each(function (Subscription $subscription): void {
+                $this->cancelImmediately($subscription);
+            });
+
+        Subscription::query()
+            ->current()
+            ->whereNull('canceled_at')
             ->where('status', SubscriptionStatus::Trialing)
             ->whereNotNull('trial_ends_at')
             ->where('trial_ends_at', '<=', now())
@@ -257,6 +311,7 @@ class SubscriptionService
 
         Subscription::query()
             ->current()
+            ->whereNull('canceled_at')
             ->where('ends_at', '<=', now())
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::PastDue])
             ->each(function (Subscription $subscription): void {
@@ -268,6 +323,8 @@ class SubscriptionService
                 $subscription->update([
                     'status' => SubscriptionStatus::PastDue,
                 ]);
+
+                $this->suspendTenantIfPastDueGraceElapsed($subscription->refresh());
             });
     }
 
@@ -352,6 +409,34 @@ class SubscriptionService
         return $planPrice->interval === PlanInterval::Yearly
             ? $periodStart->copy()->addYears($planPrice->interval_count)
             : $periodStart->copy()->addMonths($planPrice->interval_count);
+    }
+
+    private function cancelImmediately(Subscription $subscription): Subscription
+    {
+        $subscription->update([
+            'status' => SubscriptionStatus::Canceled,
+            'canceled_at' => $subscription->canceled_at ?? now(),
+            'is_current' => null,
+        ]);
+
+        return $subscription->refresh();
+    }
+
+    private function suspendTenantIfPastDueGraceElapsed(Subscription $subscription): void
+    {
+        $days = max(1, (int) $this->settings->value('subscriptions.past_due_suspend_after_days', 14));
+
+        if ($subscription->ends_at === null || $subscription->ends_at->copy()->addDays($days)->gt(now())) {
+            return;
+        }
+
+        $tenant = $subscription->tenant;
+
+        if (! $tenant instanceof Tenant || ! $tenant->status->canSuspend()) {
+            return;
+        }
+
+        $this->tenants->suspend($tenant);
     }
 
     private function perPage(Request $request): int

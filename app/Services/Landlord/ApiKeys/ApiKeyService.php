@@ -6,6 +6,7 @@ namespace App\Services\Landlord\ApiKeys;
 
 use App\Enums\Landlord\ApiKeyStatus;
 use App\Models\Landlord\ApiKey;
+use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,11 +23,15 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * - Only the SHA-256 hash of a key is persisted; plaintext is exposed once on creation via {@see ApiKey::$plainTextToken}.
  * - Revoked or inactive keys cannot be updated.
  * - Token prefixes are unique across soft-deleted rows.
+ * - Creation respects {@see api.keys_enabled}, {@see api.max_keys_per_user}, and default TTL settings.
  *
- * Side effects: creates, updates, revokes, soft-deletes, and restores {@see ApiKey} records.
+ * Side effects: creates, updates, revokes, soft-deletes, and restores {@see ApiKey} records;
+ * reads {@see SettingService} for API policy.
  */
 class ApiKeyService
 {
+    public function __construct(private SettingService $settings) {}
+
     /**
      * Paginate API keys using model filter, search, and include scopes.
      *
@@ -55,9 +60,14 @@ class ApiKeyService
      * Issue an active API key. The plaintext token is attached only on this instance.
      *
      * @param  array{user_id: int, name: string, expires_at?: string|null}  $data
+     *
+     * @throws ValidationException When API keys are disabled or the user is at their key limit.
      */
     public function store(array $data): ApiKey
     {
+        $this->ensureApiKeysEnabled();
+        $this->ensureWithinKeyLimit((int) $data['user_id']);
+
         [$token, $hash] = $this->nextToken();
 
         $apiKey = ApiKey::query()->create([
@@ -66,7 +76,7 @@ class ApiKeyService
             'prefix' => substr($token, 0, 12),
             'key_hash' => $hash,
             'status' => ApiKeyStatus::Active,
-            'expires_at' => isset($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
+            'expires_at' => $this->resolveExpiresAt($data['expires_at'] ?? null),
             'last_used_at' => null,
             'revoked_at' => null,
         ])->load('user');
@@ -186,6 +196,63 @@ class ApiKeyService
         throw ValidationException::withMessages([
             'status' => 'The API key is not active.',
         ]);
+    }
+
+    /**
+     * @throws ValidationException When API key creation is disabled.
+     */
+    private function ensureApiKeysEnabled(): void
+    {
+        if ($this->settings->value('api.keys_enabled', true)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'name' => ['API key creation is disabled.'],
+        ]);
+    }
+
+    /**
+     * @throws ValidationException When the user already has the maximum number of active keys.
+     */
+    private function ensureWithinKeyLimit(int $userId): void
+    {
+        $max = max(1, (int) $this->settings->value('api.max_keys_per_user', 10));
+        $count = ApiKey::query()
+            ->where('user_id', $userId)
+            ->where('status', ApiKeyStatus::Active)
+            ->count();
+
+        if ($count < $max) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'user_id' => ["This user may have at most {$max} active API keys."],
+        ]);
+    }
+
+    /**
+     * Resolve expiry from the request or default TTL settings.
+     *
+     * A TTL of 0 means keys do not expire by default unless require_key_expiry is on.
+     */
+    private function resolveExpiresAt(mixed $expiresAt): ?Carbon
+    {
+        if ($expiresAt !== null && $expiresAt !== '') {
+            return Carbon::parse((string) $expiresAt);
+        }
+
+        $ttlDays = max(0, (int) $this->settings->value('api.default_key_ttl_days', 365));
+        $requireExpiry = (bool) $this->settings->value('api.require_key_expiry', false);
+
+        if ($ttlDays === 0 && ! $requireExpiry) {
+            return null;
+        }
+
+        $days = $ttlDays > 0 ? $ttlDays : 365;
+
+        return now()->addDays($days);
     }
 
     private function perPage(Request $request): int

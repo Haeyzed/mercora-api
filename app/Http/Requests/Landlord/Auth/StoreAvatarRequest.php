@@ -23,7 +23,7 @@ class StoreAvatarRequest extends FormRequest
             /**
              * Profile image file.
              */
-            'avatar' => MediaValidation::image(required: true),
+            'avatar' => MediaValidation::avatar(required: true),
         ];
     }
 }

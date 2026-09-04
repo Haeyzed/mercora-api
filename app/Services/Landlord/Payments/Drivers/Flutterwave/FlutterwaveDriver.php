@@ -89,6 +89,12 @@ class FlutterwaveDriver implements PaymentDriver
             'meta' => $data->metadata,
         ];
 
+        if ($data->title !== null && $data->title !== '') {
+            $payload['customizations'] = [
+                'title' => $data->title,
+            ];
+        }
+
         if ($data->paymentMethod !== null) {
             $payload['payment_options'] = $this->mapPaymentMethod($data->paymentMethod);
         }

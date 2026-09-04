@@ -41,19 +41,34 @@ final class SecurityDomain implements SettingsSchema
                 default: 120,
                 rules: ['sometimes', 'integer', 'min:5', 'max:10080'],
             ),
+            'security.idle_timeout_minutes' => new SettingDefinition(
+                type: SettingType::Integer,
+                default: 30,
+                rules: ['sometimes', 'integer', 'min:1', 'max:1440'],
+            ),
             'security.max_login_attempts' => new SettingDefinition(
                 type: SettingType::Integer,
                 default: 5,
                 rules: ['sometimes', 'integer', 'min:1', 'max:50'],
             ),
+            'security.lockout_minutes' => new SettingDefinition(
+                type: SettingType::Integer,
+                default: 15,
+                rules: ['sometimes', 'integer', 'min:1', 'max:1440'],
+            ),
             'security.require_strong_passwords' => new SettingDefinition(
                 type: SettingType::Boolean,
-                default: true,
+                default: false,
                 rules: ['sometimes', 'boolean'],
             ),
             'security.revoke_tokens_on_password_change' => new SettingDefinition(
                 type: SettingType::Boolean,
                 default: true,
+                rules: ['sometimes', 'boolean'],
+            ),
+            'security.require_email_verification_for_admins' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: false,
                 rules: ['sometimes', 'boolean'],
             ),
         ];

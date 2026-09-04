@@ -17,3 +17,11 @@ Schedule::command(ProcessSubscriptionsCommand::class)
 Schedule::command(VerifyPendingPaymentsCommand::class)
     ->everyFifteenMinutes()
     ->withoutOverlapping();
+
+Schedule::command('activitylog:clean')
+    ->daily()
+    ->withoutOverlapping();
+
+Schedule::command('sanctum:prune-expired --hours=24')
+    ->daily()
+    ->withoutOverlapping();

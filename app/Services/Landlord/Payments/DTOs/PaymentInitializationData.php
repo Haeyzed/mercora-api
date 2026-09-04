@@ -24,6 +24,7 @@ readonly class PaymentInitializationData
      * @param  string|null  $redirectUrl  URL the provider redirects to after checkout.
      * @param  array<string, mixed>  $metadata  Opaque key/value pairs forwarded to the provider.
      * @param  string|null  $paymentMethod  Optional normalized method slug to constrain checkout options.
+     * @param  string|null  $title  Optional checkout / statement title (statement descriptor).
      */
     public function __construct(
         public string $reference,
@@ -34,5 +35,6 @@ readonly class PaymentInitializationData
         public ?string $redirectUrl = null,
         public array $metadata = [],
         public ?string $paymentMethod = null,
+        public ?string $title = null,
     ) {}
 }
