@@ -8,6 +8,7 @@ use App\Enums\Landlord\TenantStatus;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Tenant;
 use App\Services\Concerns\PaginatesRequests;
+use App\Services\Landlord\NoticeService;
 use App\Services\Landlord\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -27,8 +28,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * - Soft delete does not drop the tenant database; force delete does.
  *
  * Side effects: creates tenants and domains, dispatches {@see ProvisionTenantJob},
- * updates tenant status, and soft-deletes or force-deletes tenant records;
- * reads {@see SettingService} for the provisioning queue.
+ * updates tenant status, emits tenant lifecycle notices, and soft-deletes or force-deletes
+ * tenant records; reads {@see SettingService} for the provisioning queue.
  */
 class TenantService
 {
@@ -37,6 +38,7 @@ class TenantService
     public function __construct(
         private TenantProvisioningVerifier $provisioningVerifier,
         private SettingService $settings,
+        private NoticeService $notices,
     ) {}
 
     /**
@@ -187,6 +189,11 @@ class TenantService
             'status' => TenantStatus::Suspended,
         ]);
 
+        $this->notices->notifyTenantLifecycleAlert(
+            'Tenant suspended',
+            sprintf('Tenant %s was suspended.', $tenant->name),
+        );
+
         return $tenant->refresh();
     }
 
@@ -242,6 +249,28 @@ class TenantService
             'status' => TenantStatus::Failed,
             'provision_error' => $message,
         ]);
+    }
+
+    /**
+     * Force-delete soft-deleted tenants older than the retention window.
+     *
+     * @return int Number of tenants purged.
+     */
+    public function purgeExpiredSoftDeletes(): int
+    {
+        $days = max(1, (int) $this->settings->value('tenancy.soft_delete_retention_days', 30));
+        $cutoff = now()->subDays($days);
+        $purged = 0;
+
+        Tenant::onlyTrashed()
+            ->where('deleted_at', '<=', $cutoff)
+            ->orderBy('id')
+            ->each(function (Tenant $tenant) use (&$purged): void {
+                $this->forceDelete($tenant);
+                $purged++;
+            });
+
+        return $purged;
     }
 
     /**

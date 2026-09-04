@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Services/Landlord/InvoiceService.php'
+  - 'app/Services/Landlord/BillingOpsService.php'
 ---
 
 # Landlord Billing
@@ -13,3 +14,6 @@ Invoice numbering and defaults come from billing settings via SettingService: bi
 
 ## Invoice memo and statement descriptor
 Invoice defaults also merge billing.invoice_memo with billing.invoice_footer into notes. Payment checkout uses billing.statement_descriptor as Flutterwave customizations.title.
+
+## Billing reminders and dunning
+BillingOpsService drives landlord:send-billing-reminders (due-soon, overdue, renewal) and landlord:process-dunning. Reminder idempotency uses cache keys per invoice/subscription window. Dunning uses subscriptions.dunning_* and subscription dunning_attempts / last_dunned_at; renewAfterPayment resets dunning counters.

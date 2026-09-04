@@ -13,6 +13,7 @@ use App\Models\Landlord\PaymentWebhookEvent;
 use App\Models\Landlord\User;
 use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\InvoiceService;
+use App\Services\Landlord\NoticeService;
 use App\Services\Landlord\Payments\DTOs\PaymentInitializationData;
 use App\Services\Landlord\Payments\DTOs\PaymentVerificationResult;
 use App\Services\Landlord\Payments\DTOs\WebhookPayload;
@@ -49,6 +50,7 @@ class PaymentService
         private InvoiceService $invoiceService,
         private SubscriptionService $subscriptionService,
         private SettingService $settings,
+        private NoticeService $notices,
     ) {}
 
     /**
@@ -257,6 +259,16 @@ class PaymentService
                         $this->subscriptionService->renewAfterPayment($subscription, $invoice);
                     }
                 }
+
+                $this->notices->notifyBillingAlert(
+                    'Payment successful',
+                    sprintf(
+                        'Payment %s for %s %s was marked successful.',
+                        $payment->reference,
+                        number_format($payment->amount / 100, 2),
+                        $payment->currency,
+                    ),
+                );
 
                 return $payment->refresh();
             }

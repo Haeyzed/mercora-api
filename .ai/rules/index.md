@@ -7,14 +7,14 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Landlord/ApiKeyController.php | .ai/rules/api-keys.md |
 | app/Http/Controllers/**, app/Http/Resources/** | .ai/rules/api.md |
 | app/Http/Controllers/Landlord/ActivityController.php | .ai/rules/audit.md |
-| app/Services/Landlord/AuthService.php, app/Services/Landlord/SubscriptionService.php | .ai/rules/auth.md |
+| app/Services/Landlord/AuthService.php | .ai/rules/auth.md |
 | app/Http/Controllers/Landlord/InvoiceController.php | .ai/rules/billing.md |
 | app/Models/Concerns/** | .ai/rules/concerns.md |
-| app/Services/Landlord/InvoiceService.php | .ai/rules/landlord-billing.md |
+| app/Services/Landlord/InvoiceService.php, app/Services/Landlord/BillingOpsService.php | .ai/rules/landlord-billing.md |
 | app/Services/Landlord/SubscriptionService.php | .ai/rules/landlord-subscriptions.md |
 | app/Models/Landlord/** | .ai/rules/landlord.md |
 | app/Models/** | .ai/rules/models.md |
-| app/Http/Controllers/Landlord/NotificationController.php | .ai/rules/notifications.md |
+| app/Http/Controllers/Landlord/NotificationController.php, app/Services/Landlord/NoticeService.php | .ai/rules/notifications.md |
 | app/Services/Landlord/Payments/** | .ai/rules/payments.md |
 | app/Http/Controllers/Landlord/Plans/** | .ai/rules/plans.md |
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |

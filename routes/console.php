@@ -1,6 +1,9 @@
 <?php
 
+use App\Console\Commands\Landlord\ProcessDunningCommand;
 use App\Console\Commands\Landlord\ProcessSubscriptionsCommand;
+use App\Console\Commands\Landlord\PurgeDeletedTenantsCommand;
+use App\Console\Commands\Landlord\SendBillingRemindersCommand;
 use App\Console\Commands\Landlord\VerifyPendingPaymentsCommand;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -16,6 +19,18 @@ Schedule::command(ProcessSubscriptionsCommand::class)
 
 Schedule::command(VerifyPendingPaymentsCommand::class)
     ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
+Schedule::command(SendBillingRemindersCommand::class)
+    ->daily()
+    ->withoutOverlapping();
+
+Schedule::command(ProcessDunningCommand::class)
+    ->daily()
+    ->withoutOverlapping();
+
+Schedule::command(PurgeDeletedTenantsCommand::class)
+    ->daily()
     ->withoutOverlapping();
 
 Schedule::command('activitylog:clean')

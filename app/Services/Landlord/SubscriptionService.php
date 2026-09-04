@@ -55,6 +55,7 @@ class SubscriptionService
         private SettingService $settings,
         private TenantService $tenants,
         private EntitlementService $entitlements,
+        private NoticeService $notices,
     ) {}
 
     /**
@@ -308,6 +309,15 @@ class SubscriptionService
                     'status' => SubscriptionStatus::Active,
                     'ends_at' => $invoice->period_ends_at,
                     'is_current' => 1,
+                    'dunning_attempts' => 0,
+                    'last_dunned_at' => null,
+                ]);
+
+                $subscription = $subscription->refresh();
+            } else {
+                $subscription->update([
+                    'dunning_attempts' => 0,
+                    'last_dunned_at' => null,
                 ]);
 
                 $subscription = $subscription->refresh();
@@ -375,6 +385,7 @@ class SubscriptionService
             ->where('ends_at', '<=', now())
             ->whereIn('status', [SubscriptionStatus::Active, SubscriptionStatus::PastDue])
             ->each(function (Subscription $subscription): void {
+                $becamePastDue = $subscription->status !== SubscriptionStatus::PastDue;
                 $periodStart = $subscription->ends_at ?? now();
                 $periodEnd = $this->nextPeriodEnd($subscription, $periodStart);
 
@@ -383,6 +394,19 @@ class SubscriptionService
                 $subscription->update([
                     'status' => SubscriptionStatus::PastDue,
                 ]);
+
+                if ($becamePastDue) {
+                    $tenantName = $subscription->tenant?->name ?? 'Unknown tenant';
+
+                    $this->notices->notifyBillingAlert(
+                        'Subscription past due',
+                        sprintf(
+                            'Subscription #%d for %s is past due. A renewal invoice was issued.',
+                            $subscription->id,
+                            $tenantName,
+                        ),
+                    );
+                }
 
                 $this->suspendTenantIfPastDueGraceElapsed($subscription->refresh());
             });
@@ -510,6 +534,17 @@ class SubscriptionService
         if ($tenant instanceof Tenant) {
             $this->entitlements->forget($tenant);
         }
+
+        $tenantName = $tenant?->name ?? 'Unknown tenant';
+
+        $this->notices->notifyBillingAlert(
+            'Subscription canceled',
+            sprintf(
+                'Subscription #%d for %s was canceled.',
+                $subscription->id,
+                $tenantName,
+            ),
+        );
 
         return $subscription->refresh();
     }
