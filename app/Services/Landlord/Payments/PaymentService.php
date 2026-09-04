@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Payments;
 
 use App\Enums\Landlord\InvoiceStatus;
+use App\Enums\Landlord\PaymentProvider;
 use App\Enums\Landlord\PaymentStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Payment;
@@ -161,7 +162,11 @@ class PaymentService
         }
 
         $driver = $this->paymentManager->driver($payment->provider->value);
-        $result = $driver->verify($payment->reference, $payment->amount, $payment->currency);
+        $result = $driver->verify(
+            $this->verificationReference($payment),
+            $payment->amount,
+            $payment->currency,
+        );
 
         return $this->applyVerificationResult($payment, $result);
     }
@@ -278,5 +283,21 @@ class PaymentService
         } while (Payment::query()->where('reference', $reference)->exists());
 
         return $reference;
+    }
+
+    /**
+     * PayPal verifies by order id (provider_reference); others use the merchant reference.
+     */
+    private function verificationReference(Payment $payment): string
+    {
+        if (
+            $payment->provider === PaymentProvider::Paypal
+            && is_string($payment->provider_reference)
+            && $payment->provider_reference !== ''
+        ) {
+            return $payment->provider_reference;
+        }
+
+        return $payment->reference;
     }
 }

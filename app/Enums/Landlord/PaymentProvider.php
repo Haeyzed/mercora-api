@@ -17,6 +17,7 @@ enum PaymentProvider: string
     case Flutterwave = 'flutterwave';
     case Paystack = 'paystack';
     case Stripe = 'stripe';
+    case Paypal = 'paypal';
 
     /**
      * All provider slug values for validation and configuration lookups.

@@ -7,6 +7,7 @@ namespace App\Services\Landlord\Payments;
 use App\Enums\Landlord\PaymentProvider;
 use App\Services\Landlord\Payments\Contracts\PaymentDriver;
 use App\Services\Landlord\Payments\Drivers\Flutterwave\FlutterwaveDriver;
+use App\Services\Landlord\Payments\Drivers\Paypal\PaypalDriver;
 use App\Services\Landlord\Payments\Drivers\Paystack\PaystackDriver;
 use App\Services\Landlord\Payments\Drivers\Stripe\StripeDriver;
 use App\Services\Landlord\Payments\Exceptions\PaymentException;
@@ -55,6 +56,7 @@ class PaymentManager
             PaymentProvider::Flutterwave->value => new FlutterwaveDriver($config),
             PaymentProvider::Paystack->value => new PaystackDriver($config),
             PaymentProvider::Stripe->value => new StripeDriver($config),
+            PaymentProvider::Paypal->value => new PaypalDriver($config),
             default => throw new InvalidArgumentException("Unsupported payment driver [{$name}]."),
         };
     }

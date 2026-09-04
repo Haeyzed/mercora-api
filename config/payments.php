@@ -30,6 +30,14 @@ return [
             'base_url' => env('STRIPE_BASE_URL', 'https://api.stripe.com/v1'),
             'supported_currencies' => ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'CHF', 'SGD'],
         ],
+
+        'paypal' => [
+            'client_id' => env('PAYPAL_CLIENT_ID'),
+            'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+            'webhook_id' => env('PAYPAL_WEBHOOK_ID'),
+            'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com'),
+            'supported_currencies' => ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'SGD', 'NZD'],
+        ],
     ],
 
     'reference_prefix' => env('PAYMENT_REFERENCE_PREFIX', 'mercora'),

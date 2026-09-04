@@ -22,6 +22,11 @@ beforeEach(function (): void {
         'payments.drivers.stripe.webhook_secret' => 'whsec_test',
         'payments.drivers.stripe.base_url' => 'https://api.stripe.com/v1',
         'payments.drivers.stripe.supported_currencies' => ['USD', 'EUR'],
+        'payments.drivers.paypal.client_id' => 'paypal-client',
+        'payments.drivers.paypal.client_secret' => 'paypal-secret',
+        'payments.drivers.paypal.webhook_id' => 'WH-test',
+        'payments.drivers.paypal.base_url' => 'https://api-m.sandbox.paypal.com',
+        'payments.drivers.paypal.supported_currencies' => ['USD', 'EUR'],
     ]);
 });
 
@@ -134,6 +139,68 @@ describe('StripeDriver', function () {
 
         expect(fn () => $driver->verify('mercora_stripe_1', 2900, 'USD'))
             ->toThrow(PaymentException::class);
+    });
+});
+
+describe('PaypalDriver', function () {
+    it('initializes a paypal checkout order', function () {
+        Http::fake([
+            'https://api-m.sandbox.paypal.com/v1/oauth2/token' => Http::response([
+                'access_token' => 'paypal-access-token',
+                'expires_in' => 3600,
+            ]),
+            'https://api-m.sandbox.paypal.com/v2/checkout/orders' => Http::response([
+                'id' => 'ORDER-123',
+                'status' => 'PAYER_ACTION_REQUIRED',
+                'links' => [
+                    ['rel' => 'payer-action', 'href' => 'https://www.sandbox.paypal.com/checkoutnow?token=ORDER-123'],
+                ],
+            ]),
+        ]);
+
+        $result = app(PaymentManager::class)->driver('paypal')->initialize(new PaymentInitializationData(
+            reference: 'mercora_paypal_1',
+            amount: 2900,
+            currency: 'USD',
+            email: 'buyer@example.com',
+            name: 'Buyer',
+            redirectUrl: 'https://app.test/return',
+            title: 'Invoice INV-1',
+        ));
+
+        expect($result->checkoutUrl)->toBe('https://www.sandbox.paypal.com/checkoutnow?token=ORDER-123')
+            ->and($result->providerReference)->toBe('ORDER-123')
+            ->and(app(PaymentManager::class)->driver('paypal')->provider())->toBe(PaymentProvider::Paypal);
+    });
+
+    it('normalizes a completed paypal order webhook', function () {
+        $driver = app(PaymentManager::class)->driver('paypal');
+
+        $result = $driver->normalizeWebhook(new WebhookPayload(
+            rawPayload: '{}',
+            body: [
+                'event_type' => 'CHECKOUT.ORDER.COMPLETED',
+                'resource' => [
+                    'id' => 'ORDER-123',
+                    'status' => 'COMPLETED',
+                    'purchase_units' => [[
+                        'custom_id' => 'mercora_paypal_1',
+                        'amount' => [
+                            'currency_code' => 'USD',
+                            'value' => '29.00',
+                        ],
+                    ]],
+                ],
+            ],
+            signature: null,
+            eventType: 'CHECKOUT.ORDER.COMPLETED',
+            eventId: 'WH-1',
+        ));
+
+        expect($result->status)->toBe(PaymentStatus::Successful)
+            ->and($result->reference)->toBe('mercora_paypal_1')
+            ->and($result->amount)->toBe(2900)
+            ->and($result->currency)->toBe('USD');
     });
 });
 

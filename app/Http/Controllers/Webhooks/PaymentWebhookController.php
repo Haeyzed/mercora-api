@@ -62,6 +62,19 @@ class PaymentWebhookController extends Controller
                 eventType: $request->input('type'),
                 eventId: $request->input('id'),
             ),
+            PaymentProvider::Paypal->value => new WebhookPayload(
+                rawPayload: $request->getContent(),
+                body: $body,
+                signature: json_encode([
+                    'auth_algo' => $request->header('PAYPAL-AUTH-ALGO'),
+                    'cert_url' => $request->header('PAYPAL-CERT-URL'),
+                    'transmission_id' => $request->header('PAYPAL-TRANSMISSION-ID'),
+                    'transmission_sig' => $request->header('PAYPAL-TRANSMISSION-SIG'),
+                    'transmission_time' => $request->header('PAYPAL-TRANSMISSION-TIME'),
+                ], JSON_THROW_ON_ERROR),
+                eventType: $request->input('event_type'),
+                eventId: $request->input('id'),
+            ),
             default => new WebhookPayload(
                 rawPayload: $request->getContent(),
                 body: $body,
