@@ -350,7 +350,7 @@ class PaypalDriver implements PaymentDriver
     }
 
     /**
-     * @throws PaymentException
+     * @throws PaymentException|ConnectionException
      */
     private function accessToken(): string
     {
