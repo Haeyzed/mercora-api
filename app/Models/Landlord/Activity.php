@@ -16,12 +16,17 @@ class Activity extends BaseActivity
     /** @use HasFactory<ActivityFactory> */
     use AllowsIncludes, HasFactory;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): ActivityFactory
     {
         return ActivityFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -30,6 +35,8 @@ class Activity extends BaseActivity
     }
 
     /**
+     * Apply list filters for event, log name, subject, and causer.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -47,6 +54,9 @@ class Activity extends BaseActivity
             ->when(filled($filters['causer_id'] ?? null), fn (Builder $query): Builder => $query->where('causer_id', $filters['causer_id']));
     }
 
+    /**
+     * Search activities by description.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -59,6 +69,9 @@ class Activity extends BaseActivity
         $query->where('description', 'like', '%'.$term.'%');
     }
 
+    /**
+     * Order activities by creation date, newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

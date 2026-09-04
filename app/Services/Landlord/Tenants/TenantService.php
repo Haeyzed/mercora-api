@@ -7,6 +7,7 @@ namespace App\Services\Landlord\Tenants;
 use App\Enums\Landlord\TenantStatus;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Tenant;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -31,6 +32,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class TenantService
 {
+    use PaginatesRequests;
+
     public function __construct(
         private TenantProvisioningVerifier $provisioningVerifier,
         private SettingService $settings,
@@ -357,10 +360,5 @@ class TenantService
         throw ValidationException::withMessages([
             'status' => ["At most {$max} tenants may be provisioning at once."],
         ]);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

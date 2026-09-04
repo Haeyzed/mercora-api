@@ -33,12 +33,17 @@ class ApiKey extends Model
 
     public ?string $plainTextToken = null;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): ApiKeyFactory
     {
         return ApiKeyFactory::new();
     }
 
     /**
+     * Attributes excluded from Spatie activity logs.
+     *
      * @return list<string>
      */
     protected function activitylogExcept(): array
@@ -47,6 +52,8 @@ class ApiKey extends Model
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -59,12 +66,19 @@ class ApiKey extends Model
         ];
     }
 
+    /**
+     * User that owns this API key.
+     *
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -73,6 +87,8 @@ class ApiKey extends Model
     }
 
     /**
+     * Apply list filters for user, status, and prefix.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -88,6 +104,9 @@ class ApiKey extends Model
             ->when(filled($filters['prefix'] ?? null), fn (Builder $query): Builder => $query->where('prefix', $filters['prefix']));
     }
 
+    /**
+     * Search API keys by name, prefix, or owner identity.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -109,6 +128,9 @@ class ApiKey extends Model
         });
     }
 
+    /**
+     * Order API keys by newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

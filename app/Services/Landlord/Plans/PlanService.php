@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Plans;
 
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PlanService
 {
+    use PaginatesRequests;
+
     public function __construct(private EntitlementService $entitlementService) {}
 
     /**
@@ -179,10 +182,5 @@ class PlanService
             });
 
         return $plan->load('features');
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

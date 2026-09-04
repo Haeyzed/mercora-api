@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Domains;
 
 use App\Models\Landlord\Domain;
 use App\Models\Landlord\Tenant;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ use Illuminate\Validation\ValidationException;
  */
 class DomainService
 {
+    use PaginatesRequests;
+
     public function __construct(private SettingService $settings) {}
 
     /**
@@ -110,10 +113,5 @@ class DomainService
         throw ValidationException::withMessages([
             'domain' => ["This tenant may have at most {$max} domains."],
         ]);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

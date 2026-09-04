@@ -32,6 +32,8 @@ use Illuminate\Support\Carbon;
 class PaymentWebhookEvent extends Model
 {
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array

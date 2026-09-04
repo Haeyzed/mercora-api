@@ -12,6 +12,7 @@ use App\Models\Landlord\Plan;
 use App\Models\Landlord\PlanPrice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Billing\InvoiceService;
 use App\Services\Landlord\Settings\SettingService;
 use App\Services\Landlord\Tenants\TenantService;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Manages tenant subscriptions to catalog plans and their billing lifecycle.
@@ -42,6 +44,8 @@ use Illuminate\Validation\ValidationException;
  */
 class SubscriptionService
 {
+    use PaginatesRequests;
+
     public function __construct(
         private InvoiceService $invoiceService,
         private SettingService $settings,
@@ -80,7 +84,7 @@ class SubscriptionService
      * @param  array{tenant_id: string, plan_id: int, plan_price_id?: int, starts_at?: string|CarbonInterface}  $data
      *
      * @throws ModelNotFoundException When the tenant or plan does not exist.
-     * @throws ValidationException When the tenant already has a current subscription or no active price exists.
+     * @throws ValidationException|Throwable When the tenant already has a current subscription or no active price exists.
      */
     public function store(array $data): Subscription
     {
@@ -437,10 +441,5 @@ class SubscriptionService
         }
 
         $this->tenants->suspend($tenant);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

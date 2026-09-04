@@ -34,12 +34,17 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'status' => 'pending',
     ];
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): TenantFactory
     {
         return TenantFactory::new();
     }
 
     /**
+     * Attributes excluded from Spatie activity logs.
+     *
      * @return list<string>
      */
     protected function activitylogExcept(): array
@@ -48,6 +53,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
+     * Columns stored on the tenants table instead of the VirtualColumn data JSON.
+     *
      * @return list<string>
      */
     public static function getCustomColumns(): array
@@ -65,6 +72,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         ];
     }
 
+    /**
+     * Configure slug generation from the tenant name.
+     */
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -73,6 +83,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -84,6 +96,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -91,17 +105,29 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return ['domains', 'subscriptions', 'invoices'];
     }
 
+    /**
+     * Subscriptions belonging to this tenant.
+     *
+     * @return HasMany<Subscription, $this>
+     */
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
     }
 
+    /**
+     * Invoices issued to this tenant.
+     *
+     * @return HasMany<Invoice, $this>
+     */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
     /**
+     * Apply list filters for name, slug, and status.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -117,6 +143,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             ->when(filled($filters['status'] ?? null), fn (Builder $query): Builder => $query->where('status', $filters['status']));
     }
 
+    /**
+     * Search tenants by name or slug.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -134,6 +163,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         });
     }
 
+    /**
+     * Order tenants by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

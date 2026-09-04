@@ -17,12 +17,17 @@ class State extends WorldState
     /** @use HasFactory<StateFactory> */
     use AllowsIncludes, HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): StateFactory
     {
         return StateFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -31,6 +36,8 @@ class State extends WorldState
     }
 
     /**
+     * Apply list filters for name, country, and state code.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -47,6 +54,9 @@ class State extends WorldState
             ->when(filled($filters['state_code'] ?? null), fn (Builder $query): Builder => $query->where('state_code', $filters['state_code']));
     }
 
+    /**
+     * Search states by name or location codes.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -65,6 +75,9 @@ class State extends WorldState
         });
     }
 
+    /**
+     * Order states by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

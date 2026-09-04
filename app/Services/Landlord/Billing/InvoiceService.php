@@ -9,6 +9,7 @@ use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Payment;
 use App\Models\Landlord\Subscription;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Settings\SettingService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -38,6 +39,8 @@ use Illuminate\Validation\ValidationException;
  */
 class InvoiceService
 {
+    use PaginatesRequests;
+
     public function __construct(private SettingService $settings) {}
 
     /**
@@ -305,10 +308,5 @@ class InvoiceService
         $sanitized = strtoupper((string) preg_replace('/[^A-Za-z0-9]+/', '', $value));
 
         return $sanitized !== '' ? $sanitized : $fallback;
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

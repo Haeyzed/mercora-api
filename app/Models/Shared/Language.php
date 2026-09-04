@@ -16,12 +16,17 @@ class Language extends WorldLanguage
     /** @use HasFactory<LanguageFactory> */
     use HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): LanguageFactory
     {
         return LanguageFactory::new();
     }
 
     /**
+     * Apply list filters for name, native name, code, and direction.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -38,6 +43,9 @@ class Language extends WorldLanguage
             ->when(filled($filters['dir'] ?? null), fn (Builder $query): Builder => $query->where('dir', $filters['dir']));
     }
 
+    /**
+     * Search languages by name, native name, or code.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -56,6 +64,9 @@ class Language extends WorldLanguage
         });
     }
 
+    /**
+     * Order languages by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

@@ -6,6 +6,7 @@ namespace App\Services\Landlord\ApiKeys;
 
 use App\Enums\Landlord\ApiKeyStatus;
 use App\Models\Landlord\ApiKey;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class ApiKeyService
 {
+    use PaginatesRequests;
+
     public function __construct(private SettingService $settings) {}
 
     /**
@@ -253,10 +256,5 @@ class ApiKeyService
         $days = $ttlDays > 0 ? $ttlDays : 365;
 
         return now()->addDays($days);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

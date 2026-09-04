@@ -17,12 +17,17 @@ class Country extends WorldCountry
     /** @use HasFactory<CountryFactory> */
     use AllowsIncludes, HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): CountryFactory
     {
         return CountryFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -31,6 +36,8 @@ class Country extends WorldCountry
     }
 
     /**
+     * Apply list filters for name, ISO codes, region, and status.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -48,6 +55,9 @@ class Country extends WorldCountry
             ->when(filled($filters['status'] ?? null), fn (Builder $query): Builder => $query->where('status', $filters['status']));
     }
 
+    /**
+     * Search countries by name, ISO codes, native name, or phone code.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -68,6 +78,9 @@ class Country extends WorldCountry
         });
     }
 
+    /**
+     * Order countries by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

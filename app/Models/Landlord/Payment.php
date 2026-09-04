@@ -51,12 +51,17 @@ class Payment extends Model
     /** @use HasFactory<PaymentFactory> */
     use HasFactory, LogsLandlordActivity;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): PaymentFactory
     {
         return PaymentFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -73,6 +78,8 @@ class Payment extends Model
     }
 
     /**
+     * Attributes excluded from Spatie activity logs.
+     *
      * @return list<string>
      */
     protected function activitylogExcept(): array
@@ -111,6 +118,8 @@ class Payment extends Model
     }
 
     /**
+     * Apply list filters for tenant, invoice, status, and provider.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -127,6 +136,9 @@ class Payment extends Model
             ->when(filled($filters['provider'] ?? null), fn (Builder $query): Builder => $query->where('provider', $filters['provider']));
     }
 
+    /**
+     * Order payments by id, newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

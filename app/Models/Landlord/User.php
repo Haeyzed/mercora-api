@@ -33,12 +33,17 @@ class User extends Authenticatable implements HasMedia
     /** @use HasFactory<UserFactory> */
     use AllowsIncludes, HasApiTokens, HasFactory, HasRoles, InteractsWithMedia, LogsLandlordActivity, Notifiable;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -51,6 +56,8 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Attributes excluded from Spatie activity logs.
+     *
      * @return list<string>
      */
     protected function activitylogExcept(): array
@@ -58,16 +65,29 @@ class User extends Authenticatable implements HasMedia
         return ['password', 'remember_token'];
     }
 
+    /**
+     * Notices addressed to this user.
+     *
+     * @return HasMany<Notice, $this>
+     */
     public function notices(): HasMany
     {
         return $this->hasMany(Notice::class);
     }
 
+    /**
+     * API keys owned by this user.
+     *
+     * @return HasMany<ApiKey, $this>
+     */
     public function apiKeys(): HasMany
     {
         return $this->hasMany(ApiKey::class);
     }
 
+    /**
+     * Register media collections for the user avatar.
+     */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(MediaCollection::Avatar->value)
@@ -75,6 +95,9 @@ class User extends Authenticatable implements HasMedia
             ->acceptsMimeTypes(config('media.mimes.image', []));
     }
 
+    /**
+     * Register image conversions for avatar thumbnails.
+     */
     public function registerMediaConversions(?Media $media = null): void
     {
         if (! $this->shouldGenerateThumbnails()) {
@@ -89,6 +112,9 @@ class User extends Authenticatable implements HasMedia
             ->performOnCollections(MediaCollection::Avatar->value);
     }
 
+    /**
+     * Whether thumbnail conversions should run based on storage settings.
+     */
     private function shouldGenerateThumbnails(): bool
     {
         try {
@@ -103,6 +129,8 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -111,6 +139,8 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
+     * Apply list filters for name, email, and active status.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -126,6 +156,9 @@ class User extends Authenticatable implements HasMedia
             ->when(array_key_exists('is_active', $filters) && $filters['is_active'] !== null && $filters['is_active'] !== '', fn (Builder $query): Builder => $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN)));
     }
 
+    /**
+     * Search users by name or email.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -143,6 +176,9 @@ class User extends Authenticatable implements HasMedia
         });
     }
 
+    /**
+     * Order users by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

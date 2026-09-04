@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Plans;
 
 use App\Models\Landlord\Feature;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -22,6 +23,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class FeatureService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate features using model filter and search scopes.
      *
@@ -126,10 +129,5 @@ class FeatureService
     public function restoreMany(array $ids): void
     {
         Feature::onlyTrashed()->whereKey($ids)->restore();
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

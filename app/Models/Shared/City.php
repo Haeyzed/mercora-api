@@ -17,12 +17,17 @@ class City extends WorldCity
     /** @use HasFactory<CityFactory> */
     use AllowsIncludes, HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): CityFactory
     {
         return CityFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -31,6 +36,8 @@ class City extends WorldCity
     }
 
     /**
+     * Apply list filters for name, country, and state.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -48,6 +55,9 @@ class City extends WorldCity
             ->when(filled($filters['state_code'] ?? null), fn (Builder $query): Builder => $query->where('state_code', $filters['state_code']));
     }
 
+    /**
+     * Search cities by name or location codes.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -66,6 +76,9 @@ class City extends WorldCity
         });
     }
 
+    /**
+     * Order cities by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

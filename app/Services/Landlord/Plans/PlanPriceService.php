@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Plans;
 
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\PlanPrice;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +25,8 @@ use Illuminate\Validation\ValidationException;
  */
 class PlanPriceService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate prices for a plan.
      *
@@ -176,10 +179,5 @@ class PlanPriceService
                 ]);
             }
         }
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

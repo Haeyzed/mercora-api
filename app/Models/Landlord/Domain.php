@@ -18,11 +18,17 @@ class Domain extends BaseDomain
     /** @use HasFactory<DomainFactory> */
     use HasFactory, LogsLandlordActivity;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): DomainFactory
     {
         return DomainFactory::new();
     }
 
+    /**
+     * Search domains by hostname.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -35,6 +41,9 @@ class Domain extends BaseDomain
         $query->where('domain', 'like', '%'.$term.'%');
     }
 
+    /**
+     * Order domains by hostname then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

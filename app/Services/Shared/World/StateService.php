@@ -9,6 +9,7 @@ use App\Exports\Shared\World\WorldTemplateExport;
 use App\Imports\Shared\World\StatesImport;
 use App\Models\Shared\Country;
 use App\Models\Shared\State;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +31,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class StateService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate states using model filter, search, and include scopes.
      *
@@ -174,10 +177,5 @@ class StateService
         }
 
         return $data;
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

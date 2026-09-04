@@ -28,12 +28,17 @@ class Feature extends Model
     /** @use HasFactory<FeatureFactory> */
     use HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): FeatureFactory
     {
         return FeatureFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -57,6 +62,8 @@ class Feature extends Model
     }
 
     /**
+     * Apply list filters for key, type, and active status.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -72,6 +79,9 @@ class Feature extends Model
             ->when(array_key_exists('is_active', $filters) && $filters['is_active'] !== null && $filters['is_active'] !== '', fn (Builder $query): Builder => $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN)));
     }
 
+    /**
+     * Search features by name, key, or description.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -90,6 +100,9 @@ class Feature extends Model
         });
     }
 
+    /**
+     * Order features by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

@@ -17,12 +17,17 @@ class Currency extends WorldCurrency
     /** @use HasFactory<CurrencyFactory> */
     use AllowsIncludes, HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): CurrencyFactory
     {
         return CurrencyFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -31,6 +36,8 @@ class Currency extends WorldCurrency
     }
 
     /**
+     * Apply list filters for name, code, and country.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -46,6 +53,9 @@ class Currency extends WorldCurrency
             ->when(filled($filters['country_id'] ?? null), fn (Builder $query): Builder => $query->where('country_id', $filters['country_id']));
     }
 
+    /**
+     * Search currencies by name, code, or symbol.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -64,6 +74,9 @@ class Currency extends WorldCurrency
         });
     }
 
+    /**
+     * Order currencies by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

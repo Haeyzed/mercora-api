@@ -39,12 +39,17 @@ class PlanPrice extends Model
     /** @use HasFactory<PlanPriceFactory> */
     use HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): PlanPriceFactory
     {
         return PlanPriceFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -78,6 +83,9 @@ class PlanPrice extends Model
         return $this->hasMany(Subscription::class);
     }
 
+    /**
+     * Order prices with active ones first, then by currency.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

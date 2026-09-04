@@ -10,6 +10,7 @@ use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Payment;
 use App\Models\Landlord\PaymentWebhookEvent;
 use App\Models\Landlord\User;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Billing\InvoiceService;
 use App\Services\Landlord\Payments\DTOs\PaymentInitializationData;
 use App\Services\Landlord\Payments\DTOs\PaymentVerificationResult;
@@ -40,6 +41,8 @@ use Illuminate\Validation\ValidationException;
  */
 class PaymentService
 {
+    use PaginatesRequests;
+
     public function __construct(
         private PaymentManager $paymentManager,
         private InvoiceService $invoiceService,
@@ -57,7 +60,7 @@ class PaymentService
         return Payment::query()
             ->filter($request->input('filter', []))
             ->ordered()
-            ->paginate(min(max($request->integer('per_page', 15), 1), 100))
+            ->paginate($this->perPage($request))
             ->withQueryString();
     }
 

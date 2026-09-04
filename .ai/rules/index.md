@@ -13,11 +13,13 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Landlord/Billing/** | .ai/rules/landlord-billing.md |
 | app/Services/Landlord/Subscriptions/** | .ai/rules/landlord-subscriptions.md |
 | app/Models/Landlord/** | .ai/rules/landlord.md |
+| app/Models/** | .ai/rules/models.md |
 | app/Http/Controllers/Landlord/Notifications/** | .ai/rules/notifications.md |
 | app/Http/Controllers/Landlord/Plans/** | .ai/rules/plans.md |
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |
 | app/Providers/TenancyServiceProvider.php, app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
+| app/Services/** | .ai/rules/services.md |
 | app/Http/Controllers/Landlord/Settings/**, app/Support/Settings/**, app/Settings/** | .ai/rules/settings.md |
 | app/Models/Shared/** | .ai/rules/shared.md |
 | app/Http/Controllers/Landlord/Subscriptions/** | .ai/rules/subscriptions.md |

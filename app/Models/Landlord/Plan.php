@@ -40,11 +40,17 @@ class Plan extends Model
         'status' => 'draft',
     ];
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): PlanFactory
     {
         return PlanFactory::new();
     }
 
+    /**
+     * Configure slug generation from the plan name.
+     */
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -53,6 +59,8 @@ class Plan extends Model
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -64,6 +72,8 @@ class Plan extends Model
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -71,11 +81,21 @@ class Plan extends Model
         return ['subscriptions', 'prices', 'features'];
     }
 
+    /**
+     * Subscriptions created from this plan.
+     *
+     * @return HasMany<Subscription, $this>
+     */
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
     }
 
+    /**
+     * Currency-specific prices for this plan.
+     *
+     * @return HasMany<PlanPrice, $this>
+     */
     public function prices(): HasMany
     {
         return $this->hasMany(PlanPrice::class);
@@ -117,6 +137,8 @@ class Plan extends Model
     }
 
     /**
+     * Apply list filters for identity, status, interval, and currency.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -140,6 +162,9 @@ class Plan extends Model
             ));
     }
 
+    /**
+     * Search plans by name, slug, or description.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -158,6 +183,9 @@ class Plan extends Model
         });
     }
 
+    /**
+     * Order plans by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

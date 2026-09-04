@@ -24,12 +24,17 @@ class Subscription extends Model
     /** @use HasFactory<SubscriptionFactory> */
     use AllowsIncludes, HasFactory, LogsLandlordActivity, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): SubscriptionFactory
     {
         return SubscriptionFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -45,22 +50,39 @@ class Subscription extends Model
         ];
     }
 
+    /**
+     * Tenant that holds this subscription.
+     *
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
+    /**
+     * Catalog plan this subscription is based on.
+     *
+     * @return BelongsTo<Plan, $this>
+     */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }
 
+    /**
+     * Plan price snapshotted when the subscription was created.
+     *
+     * @return BelongsTo<PlanPrice, $this>
+     */
     public function planPrice(): BelongsTo
     {
         return $this->belongsTo(PlanPrice::class);
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -68,12 +90,19 @@ class Subscription extends Model
         return ['tenant', 'plan', 'planPrice', 'invoices'];
     }
 
+    /**
+     * Invoices generated for this subscription.
+     *
+     * @return HasMany<Invoice, $this>
+     */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
     /**
+     * Apply list filters for tenant, plan, and status.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -89,6 +118,9 @@ class Subscription extends Model
             ->when(filled($filters['status'] ?? null), fn (Builder $query): Builder => $query->where('status', $filters['status']));
     }
 
+    /**
+     * Search subscriptions by tenant or plan identity.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -111,12 +143,18 @@ class Subscription extends Model
         });
     }
 
+    /**
+     * Limit results to subscriptions in a current (active-like) status.
+     */
     #[Scope]
     protected function current(Builder $query): void
     {
         $query->whereIn('status', SubscriptionStatus::currentCases());
     }
 
+    /**
+     * Order subscriptions by start date, newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

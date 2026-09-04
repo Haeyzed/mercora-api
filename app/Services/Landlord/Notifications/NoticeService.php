@@ -7,6 +7,7 @@ namespace App\Services\Landlord\Notifications;
 use App\Enums\Landlord\NoticeChannel;
 use App\Enums\Landlord\NoticeStatus;
 use App\Models\Landlord\Notice;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Settings\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -28,6 +29,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class NoticeService
 {
+    use PaginatesRequests;
+
     public function __construct(private SettingService $settings) {}
 
     /**
@@ -202,10 +205,5 @@ class NoticeService
         throw ValidationException::withMessages([
             'channel' => ["The {$channel->value} notification channel is disabled."],
         ]);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

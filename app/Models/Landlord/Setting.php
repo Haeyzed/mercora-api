@@ -24,12 +24,17 @@ class Setting extends Model
         'type' => 'string',
     ];
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): SettingFactory
     {
         return SettingFactory::new();
     }
 
     /**
+     * Attributes excluded from Spatie activity logs.
+     *
      * @return list<string>
      */
     protected function activitylogExcept(): array
@@ -38,6 +43,8 @@ class Setting extends Model
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -47,6 +54,9 @@ class Setting extends Model
         ];
     }
 
+    /**
+     * Encode a typed setting value for storage as a string.
+     */
     public static function encode(SettingType $type, mixed $value): string
     {
         return match ($type) {
@@ -57,6 +67,9 @@ class Setting extends Model
         };
     }
 
+    /**
+     * Decode the stored string value according to the setting type.
+     */
     public function decoded(): mixed
     {
         $stored = $this->getAttributes()['value'] ?? null;

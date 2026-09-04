@@ -8,6 +8,7 @@ use App\Exports\Shared\World\LanguagesExport;
 use App\Exports\Shared\World\WorldTemplateExport;
 use App\Imports\Shared\World\LanguagesImport;
 use App\Models\Shared\Language;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +29,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class LanguageService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate languages using model filter and search scopes.
      *
@@ -156,10 +159,5 @@ class LanguageService
     public function export(Request $request): BinaryFileResponse
     {
         return Excel::download(new LanguagesExport($request), 'languages.xlsx');
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

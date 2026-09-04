@@ -8,6 +8,7 @@ use App\Exports\Shared\World\CurrenciesExport;
 use App\Exports\Shared\World\WorldTemplateExport;
 use App\Imports\Shared\World\CurrenciesImport;
 use App\Models\Shared\Currency;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +29,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class CurrencyService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate currencies using model filter, search, and include scopes.
      *
@@ -157,10 +160,5 @@ class CurrencyService
     public function export(Request $request): BinaryFileResponse
     {
         return Excel::download(new CurrenciesExport($request), 'currencies.xlsx');
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

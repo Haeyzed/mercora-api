@@ -22,12 +22,17 @@ class Invoice extends Model
     /** @use HasFactory<InvoiceFactory> */
     use AllowsIncludes, HasFactory, LogsLandlordActivity, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): InvoiceFactory
     {
         return InvoiceFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -44,22 +49,39 @@ class Invoice extends Model
         ];
     }
 
+    /**
+     * Tenant billed by this invoice.
+     *
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
+    /**
+     * Subscription this invoice covers.
+     *
+     * @return BelongsTo<Subscription, $this>
+     */
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
     }
 
+    /**
+     * Payment that settled this invoice, when paid.
+     *
+     * @return BelongsTo<Payment, $this>
+     */
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -68,6 +90,8 @@ class Invoice extends Model
     }
 
     /**
+     * Apply list filters for tenant, subscription, status, and number.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -84,6 +108,9 @@ class Invoice extends Model
             ->when(filled($filters['number'] ?? null), fn (Builder $query): Builder => $query->where('number', $filters['number']));
     }
 
+    /**
+     * Search invoices by number or tenant identity.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -104,6 +131,9 @@ class Invoice extends Model
         });
     }
 
+    /**
+     * Order invoices by issue date, newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

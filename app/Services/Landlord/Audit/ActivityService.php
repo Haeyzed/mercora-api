@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Audit;
 
 use App\Models\Landlord\Activity;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
@@ -21,6 +22,8 @@ use Illuminate\Http\Request;
  */
 class ActivityService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate activities using model filter, search, and include scopes.
      *
@@ -61,10 +64,5 @@ class ActivityService
     public function destroyMany(array $ids): void
     {
         Activity::query()->whereKey($ids)->delete();
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

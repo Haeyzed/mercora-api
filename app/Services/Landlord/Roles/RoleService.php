@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Roles;
 
 use App\Enums\Landlord\Permission;
 use App\Enums\Landlord\RoleName;
+use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,8 @@ use Spatie\Permission\Models\Role;
  */
 class RoleService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate roles with their permissions, optionally filtered by search term.
      *
@@ -130,10 +133,5 @@ class RoleService
     private function isProtected(Role $role): bool
     {
         return $role->name === RoleName::SuperAdmin->value;
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

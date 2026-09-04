@@ -17,12 +17,17 @@ class Timezone extends WorldTimezone
     /** @use HasFactory<TimezoneFactory> */
     use AllowsIncludes, HasFactory, SoftDeletes;
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): TimezoneFactory
     {
         return TimezoneFactory::new();
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -31,6 +36,8 @@ class Timezone extends WorldTimezone
     }
 
     /**
+     * Apply list filters for name and country.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -45,6 +52,9 @@ class Timezone extends WorldTimezone
             ->when(filled($filters['country_id'] ?? null), fn (Builder $query): Builder => $query->where('country_id', $filters['country_id']));
     }
 
+    /**
+     * Search timezones by name.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -57,6 +67,9 @@ class Timezone extends WorldTimezone
         $query->where('name', 'like', '%'.$term.'%');
     }
 
+    /**
+     * Order timezones by name then id.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {

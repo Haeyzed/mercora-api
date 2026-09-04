@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Users;
 
 use App\Enums\Landlord\RoleName;
 use App\Models\Landlord\User;
+use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\Auth\AuthService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ use Spatie\Permission\Models\Role;
  */
 class UserService
 {
+    use PaginatesRequests;
+
     /**
      * Paginate users using model filter, search, and include scopes.
      *
@@ -201,10 +204,5 @@ class UserService
     private function superAdminCount(): int
     {
         return User::role(RoleName::SuperAdmin->value)->count();
-    }
-
-    private function perPage(Request $request): int
-    {
-        return min(max($request->integer('per_page', 15), 1), 100);
     }
 }

@@ -31,12 +31,17 @@ class Notice extends Model
         'status' => 'unread',
     ];
 
+    /**
+     * Create a new factory instance for the model.
+     */
     protected static function newFactory(): NoticeFactory
     {
         return NoticeFactory::new();
     }
 
     /**
+     * Attribute cast definitions for this model.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -48,12 +53,19 @@ class Notice extends Model
         ];
     }
 
+    /**
+     * User this notice belongs to.
+     *
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
+     * Relationship names allowed via Includes query parameters.
+     *
      * @return list<string>
      */
     protected function allowedIncludes(): array
@@ -62,6 +74,8 @@ class Notice extends Model
     }
 
     /**
+     * Apply list filters for user, status, and channel.
+     *
      * @param  array<string, mixed>|mixed  $filters
      */
     #[Scope]
@@ -77,6 +91,9 @@ class Notice extends Model
             ->when(filled($filters['channel'] ?? null), fn (Builder $query): Builder => $query->where('channel', $filters['channel']));
     }
 
+    /**
+     * Search notices by title, body, or recipient identity.
+     */
     #[Scope]
     protected function search(Builder $query, mixed $term): void
     {
@@ -98,6 +115,9 @@ class Notice extends Model
         });
     }
 
+    /**
+     * Order notices by creation date, newest first.
+     */
     #[Scope]
     protected function ordered(Builder $query): void
     {
