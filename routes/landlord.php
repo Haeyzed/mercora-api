@@ -7,6 +7,8 @@ use App\Http\Controllers\Landlord\ApiKeyController;
 use App\Http\Controllers\Landlord\AuthController;
 use App\Http\Controllers\Landlord\InvoiceController;
 use App\Http\Controllers\Landlord\NotificationController;
+use App\Http\Controllers\Landlord\NotificationPreferenceController;
+use App\Http\Controllers\Landlord\NotificationTemplateController;
 use App\Http\Controllers\Landlord\PaymentController;
 use App\Http\Controllers\Landlord\Plans\FeatureController;
 use App\Http\Controllers\Landlord\Plans\PlanController;
@@ -29,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('landlord')->name('landlord.')->group(function (): void {
     Route::middleware('throttle:landlord-auth')->group(function (): void {
         Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+        Route::post('auth/register', [AuthController::class, 'register'])->name('auth.register');
         Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgot_password');
         Route::post('auth/reset-password', [AuthController::class, 'resetPassword'])->name('auth.reset_password');
     });
@@ -40,6 +43,8 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
         Route::post('auth/avatar', [AuthController::class, 'storeAvatar'])->name('auth.avatar.store');
         Route::delete('auth/avatar', [AuthController::class, 'destroyAvatar'])->name('auth.avatar.destroy');
         Route::post('auth/change-password', [AuthController::class, 'changePassword'])->name('auth.change_password');
+        Route::get('auth/personal-data', [AuthController::class, 'exportPersonalData'])->name('auth.personal_data.export');
+        Route::delete('auth/personal-data', [AuthController::class, 'erasePersonalData'])->name('auth.personal_data.erase');
 
         Route::get('users/options', [UserController::class, 'options'])->name('users.options');
         Route::post('users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
@@ -92,6 +97,13 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
         Route::post('notifications/{notice}/read', [NotificationController::class, 'read'])->name('notifications.read');
         Route::apiResource('notifications', NotificationController::class)->parameters(['notifications' => 'notice']);
 
+        Route::get('notification-templates/options', [NotificationTemplateController::class, 'options'])->name('notification_templates.options');
+        Route::post('notification-templates/{notification_template}/preview', [NotificationTemplateController::class, 'preview'])->name('notification_templates.preview');
+        Route::apiResource('notification-templates', NotificationTemplateController::class);
+
+        Route::get('notification-preferences', [NotificationPreferenceController::class, 'index'])->name('notification_preferences.index');
+        Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification_preferences.update');
+
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::get('settings/{domain}', [SettingController::class, 'show'])->name('settings.show');
         Route::put('settings/{domain}', [SettingController::class, 'update'])->name('settings.update');
@@ -122,6 +134,7 @@ Route::prefix('landlord')->name('landlord.')->group(function (): void {
         Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
         Route::post('payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
+        Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
 
         Route::prefix('world')->name('world.')->group(function (): void {
             $worldActions = function (string $resource, string $parameter, string $controller): void {

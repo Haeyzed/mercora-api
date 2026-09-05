@@ -13,6 +13,7 @@ use App\Services\Landlord\Payments\PaymentService;
 use App\Services\Landlord\SettingService;
 use App\Services\Landlord\SubscriptionService;
 use App\Services\Landlord\Tenants\TenantService;
+use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 
@@ -21,6 +22,7 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(function (): void {
     actingAsLandlord();
     configureFlutterwaveForTests();
+    $this->seed(NotificationTemplateSeeder::class);
 });
 
 it('creates billing notices when a payment succeeds', function () {

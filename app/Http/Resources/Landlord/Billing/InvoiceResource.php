@@ -27,6 +27,10 @@ class InvoiceResource extends JsonResource
             'number' => $this->number,
             'status' => $this->status,
             'amount' => $this->amount,
+            'subtotal' => $this->subtotal,
+            'tax_rate' => $this->tax_rate,
+            'tax_amount' => $this->tax_amount,
+            'tax_inclusive' => $this->tax_inclusive,
             'currency' => $this->currency,
             'issued_at' => $this->issued_at,
             'period_starts_at' => $this->period_starts_at,
@@ -35,6 +39,7 @@ class InvoiceResource extends JsonResource
             'paid_at' => $this->paid_at,
             'voided_at' => $this->voided_at,
             'notes' => $this->notes,
+            'seller' => $this->seller,
             'tenant' => new TenantResource($this->whenLoaded('tenant')),
             'subscription' => new SubscriptionResource($this->whenLoaded('subscription')),
         ];

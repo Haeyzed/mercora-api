@@ -17,3 +17,6 @@ Invoice defaults also merge billing.invoice_memo with billing.invoice_footer int
 
 ## Billing reminders and dunning
 BillingOpsService drives landlord:send-billing-reminders (due-soon, overdue, renewal) and landlord:process-dunning. Reminder idempotency uses cache keys per invoice/subscription window. Dunning uses subscriptions.dunning_* and subscription dunning_attempts / last_dunned_at; renewAfterPayment resets dunning counters.
+
+## Invoice tax and seller snapshot
+When billing.tax_enabled, issueFor snapshots subtotal/tax_amount/tax_rate/tax_inclusive from billing.default_tax_rate and tax_inclusive. Exclusive tax increases amount; inclusive extracts tax from base. Seller JSON and notes come from billing.company_*.

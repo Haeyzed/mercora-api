@@ -119,6 +119,39 @@ class PaystackDriver implements PaymentDriver
         return $this->normalizeTransaction($data, $expectedAmount, $expectedCurrency);
     }
 
+    /**
+     * @throws PaymentException
+     */
+    public function refund(string $reference, int $amount, string $currency, ?string $reason = null): PaymentVerificationResult
+    {
+        try {
+            $response = $this->client()->post('/refund', array_filter([
+                'transaction' => $reference,
+                'amount' => $amount,
+                'currency' => strtoupper($currency),
+                'merchant_note' => $reason,
+            ], fn (mixed $value): bool => $value !== null && $value !== ''));
+        } catch (ConnectionException $exception) {
+            throw PaymentException::verificationFailed($exception->getMessage());
+        }
+
+        if (! $response->successful() || $response->json('status') !== true) {
+            throw PaymentException::verificationFailed((string) ($response->json('message') ?? 'Paystack refund failed.'));
+        }
+
+        $data = $response->json('data', []);
+
+        return new PaymentVerificationResult(
+            reference: $reference,
+            providerReference: isset($data['id']) ? (string) $data['id'] : $reference,
+            status: PaymentStatus::Refunded,
+            amount: $amount,
+            currency: strtoupper($currency),
+            paymentMethod: null,
+            providerResponse: is_array($data) ? $data : [],
+        );
+    }
+
     public function verifyWebhookSignature(string $signature, string $payload): bool
     {
         $secret = $this->config['secret_key'] ?? null;

@@ -138,6 +138,35 @@ class StripeDriver implements PaymentDriver
         return $this->normalizeSession($session, $expectedAmount, $expectedCurrency, $reference);
     }
 
+    /**
+     * @throws PaymentException
+     */
+    public function refund(string $reference, int $amount, string $currency, ?string $reason = null): PaymentVerificationResult
+    {
+        $response = $this->client()->asForm()->post('/refunds', array_filter([
+            'payment_intent' => $reference,
+            'amount' => $amount,
+            'reason' => $reason !== null && $reason !== '' ? 'requested_by_customer' : null,
+            'metadata[merchant_note]' => $reason,
+        ], fn (mixed $value): bool => $value !== null && $value !== ''));
+
+        if (! $response->successful()) {
+            throw PaymentException::verificationFailed((string) ($response->json('error.message') ?? 'Stripe refund failed.'));
+        }
+
+        $data = $response->json() ?? [];
+
+        return new PaymentVerificationResult(
+            reference: $reference,
+            providerReference: isset($data['id']) ? (string) $data['id'] : $reference,
+            status: PaymentStatus::Refunded,
+            amount: $amount,
+            currency: strtoupper($currency),
+            paymentMethod: null,
+            providerResponse: is_array($data) ? $data : [],
+        );
+    }
+
     public function verifyWebhookSignature(string $signature, string $payload): bool
     {
         $secret = $this->config['webhook_secret'] ?? null;

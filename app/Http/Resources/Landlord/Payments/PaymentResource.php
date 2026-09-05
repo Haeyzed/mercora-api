@@ -29,6 +29,7 @@ class PaymentResource extends JsonResource
             'checkout_url' => $this->when($this->status->value === 'pending', $this->checkout_url),
             'paid_at' => $this->paid_at,
             'failed_at' => $this->failed_at,
+            'refunded_at' => $this->refunded_at,
             'invoice_id' => $this->invoice_id,
             'subscription_id' => $this->subscription_id,
             'tenant_id' => $this->tenant_id,

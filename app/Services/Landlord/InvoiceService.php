@@ -125,6 +125,15 @@ class InvoiceService
 
         $dueAt ??= now()->addDays($this->graceDays());
         $notes ??= $this->defaultNotes();
+        $pricing = $this->pricedAmount($amount ?? (int) $subscription->price);
+        $seller = $this->sellerSnapshot();
+
+        if ($seller !== null) {
+            $sellerNotes = $this->formatSellerNotes($seller);
+            $notes = $notes === null || $notes === ''
+                ? $sellerNotes
+                : $notes."\n\n".$sellerNotes;
+        }
 
         try {
             return Invoice::query()->create([
@@ -132,13 +141,18 @@ class InvoiceService
                 'subscription_id' => $subscription->id,
                 'number' => $this->nextNumber(),
                 'status' => InvoiceStatus::Open,
-                'amount' => $amount ?? $subscription->price,
+                'amount' => $pricing['amount'],
+                'subtotal' => $pricing['subtotal'],
+                'tax_rate' => $pricing['tax_rate'],
+                'tax_amount' => $pricing['tax_amount'],
+                'tax_inclusive' => $pricing['tax_inclusive'],
                 'currency' => $subscription->currency,
                 'issued_at' => now(),
                 'period_starts_at' => $periodStart,
                 'period_ends_at' => $periodEnd,
                 'due_at' => $dueAt,
                 'notes' => $notes,
+                'seller' => $seller,
             ])->load(['tenant', 'subscription']);
         } catch (UniqueConstraintViolationException $exception) {
             $existing = Invoice::query()
@@ -297,6 +311,93 @@ class InvoiceService
         }
 
         return $parts === [] ? null : implode("\n\n", $parts);
+    }
+
+    /**
+     * @return array{amount: int, subtotal: int, tax_amount: int, tax_rate: string|null, tax_inclusive: bool}
+     */
+    private function pricedAmount(int $baseAmount): array
+    {
+        if (! (bool) $this->settings->value('billing.tax_enabled', false)) {
+            return [
+                'amount' => $baseAmount,
+                'subtotal' => $baseAmount,
+                'tax_amount' => 0,
+                'tax_rate' => null,
+                'tax_inclusive' => false,
+            ];
+        }
+
+        $rate = (float) $this->settings->value('billing.default_tax_rate', '0');
+        $inclusive = (bool) $this->settings->value('billing.tax_inclusive', false);
+
+        if ($rate <= 0) {
+            return [
+                'amount' => $baseAmount,
+                'subtotal' => $baseAmount,
+                'tax_amount' => 0,
+                'tax_rate' => number_format($rate, 4, '.', ''),
+                'tax_inclusive' => $inclusive,
+            ];
+        }
+
+        if ($inclusive) {
+            $taxAmount = (int) round($baseAmount - ($baseAmount / (1 + ($rate / 100))));
+            $subtotal = $baseAmount - $taxAmount;
+
+            return [
+                'amount' => $baseAmount,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'tax_rate' => number_format($rate, 4, '.', ''),
+                'tax_inclusive' => true,
+            ];
+        }
+
+        $taxAmount = (int) round($baseAmount * ($rate / 100));
+
+        return [
+            'amount' => $baseAmount + $taxAmount,
+            'subtotal' => $baseAmount,
+            'tax_amount' => $taxAmount,
+            'tax_rate' => number_format($rate, 4, '.', ''),
+            'tax_inclusive' => false,
+        ];
+    }
+
+    /**
+     * @return array{name?: string, address?: string, vat_number?: string, email?: string}|null
+     */
+    private function sellerSnapshot(): ?array
+    {
+        $seller = array_filter([
+            'name' => $this->settings->value('billing.company_name'),
+            'address' => $this->settings->value('billing.company_address'),
+            'vat_number' => $this->settings->value('billing.company_vat_number'),
+            'email' => $this->settings->value('billing.company_email'),
+        ], fn (mixed $value): bool => is_string($value) && $value !== '');
+
+        return $seller === [] ? null : $seller;
+    }
+
+    /**
+     * @param  array{name?: string, address?: string, vat_number?: string, email?: string}  $seller
+     */
+    private function formatSellerNotes(array $seller): string
+    {
+        $lines = ['Seller'];
+
+        foreach (['name', 'address', 'vat_number', 'email'] as $key) {
+            if (isset($seller[$key])) {
+                $lines[] = match ($key) {
+                    'vat_number' => 'VAT: '.$seller[$key],
+                    'email' => 'Email: '.$seller[$key],
+                    default => $seller[$key],
+                };
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

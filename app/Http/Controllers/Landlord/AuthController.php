@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Landlord\Auth\ChangePasswordRequest;
 use App\Http\Requests\Landlord\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Landlord\Auth\LoginRequest;
+use App\Http\Requests\Landlord\Auth\RegisterRequest;
 use App\Http\Requests\Landlord\Auth\ResetPasswordRequest;
 use App\Http\Requests\Landlord\Auth\StoreAvatarRequest;
 use App\Http\Requests\Landlord\Auth\UpdateProfileRequest;
@@ -37,6 +38,17 @@ class AuthController extends Controller
     public function login(LoginRequest $request): LoginResource
     {
         return new LoginResource($this->authService->login($request->credentials()));
+    }
+
+    /**
+     * Register a landlord user and tenant workspace.
+     *
+     * @unauthenticated
+     */
+    #[Endpoint(operationId: 'registerLandlord', title: 'Register')]
+    public function register(RegisterRequest $request): LoginResource
+    {
+        return new LoginResource($this->authService->register($request->validated()));
     }
 
     /**
@@ -138,6 +150,35 @@ class AuthController extends Controller
         $user = $request->user();
 
         $this->authService->changePassword($user, $request->validated());
+
+        return response()->noContent();
+    }
+
+    /**
+     * Export the authenticated user's personal data.
+     */
+    #[Endpoint(operationId: 'exportLandlordPersonalData', title: 'Export personal data')]
+    public function exportPersonalData(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'data' => $this->authService->exportPersonalData($user),
+        ]);
+    }
+
+    /**
+     * Erase the authenticated user's personal data and soft-delete the account.
+     */
+    #[Endpoint(operationId: 'eraseLandlordPersonalData', title: 'Erase personal data')]
+    #[Response(204)]
+    public function erasePersonalData(Request $request): HttpResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->authService->erasePersonalData($user);
 
         return response()->noContent();
     }

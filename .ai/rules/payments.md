@@ -10,3 +10,6 @@ Payment drivers: flutterwave, paystack, stripe via PaymentManager match + config
 
 ## PayPal payment driver
 Providers: flutterwave, paystack, stripe, paypal. PayPal uses Orders v2 + OAuth client credentials; verify uses provider_reference (order id). Webhook signature is JSON-encoded PAYPAL-* headers verified via /v1/notifications/verify-webhook-signature.
+
+## Payment refunds
+POST payments/{payment}/refund requires payments.refund. Only Successful payments refund; drivers implement refund() and PaymentService marks Refunded + refunded_at. Invoices stay Paid (ledger is not reopened). Billing alert fan-out on refund.

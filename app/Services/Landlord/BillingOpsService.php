@@ -8,6 +8,7 @@ use App\Enums\Landlord\InvoiceStatus;
 use App\Enums\Landlord\SubscriptionStatus;
 use App\Models\Landlord\Invoice;
 use App\Models\Landlord\Subscription;
+use App\Services\Landlord\Notifications\NotificationDispatcher;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -16,17 +17,17 @@ use Illuminate\Support\Facades\Cache;
  * Domain: ops-side collection notices driven by billing and subscription settings.
  *
  * Invariants:
- * - Reminders and dunning only emit when {@see notifications.billing_alerts} allows (via NoticeService).
+ * - Reminders and dunning only emit when {@see notifications.billing_alerts} allows (via NotificationDispatcher).
  * - Each reminder is idempotent per invoice/subscription window via cache keys.
  * - Dunning increments {@see Subscription::$dunning_attempts} up to subscriptions.dunning_attempts.
  *
- * Side effects: creates notices; updates subscription dunning columns; reads SettingService.
+ * Side effects: dispatches templated notices; updates subscription dunning columns; reads SettingService.
  */
 class BillingOpsService
 {
     public function __construct(
         private SettingService $settings,
-        private NoticeService $notices,
+        private NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -77,15 +78,11 @@ class BillingOpsService
                 $tenantName = $subscription->tenant?->name ?? 'Unknown tenant';
                 $attempt = $subscription->dunning_attempts + 1;
 
-                $this->notices->notifyBillingAlert(
-                    'Payment dunning reminder',
-                    sprintf(
-                        'Dunning attempt %d for subscription #%d (%s). Payment is still outstanding.',
-                        $attempt,
-                        $subscription->id,
-                        $tenantName,
-                    ),
-                );
+                $this->notifications->notifyActiveUsers('subscription.dunning', [
+                    'attempt' => $attempt,
+                    'subscription_id' => $subscription->id,
+                    'tenant_name' => $tenantName,
+                ]);
 
                 $subscription->update([
                     'dunning_attempts' => $attempt,
@@ -124,15 +121,11 @@ class BillingOpsService
 
                 $tenantName = $invoice->tenant?->name ?? 'Unknown tenant';
 
-                $this->notices->notifyBillingAlert(
-                    'Invoice due soon',
-                    sprintf(
-                        'Invoice %s for %s is due on %s.',
-                        $invoice->number,
-                        $tenantName,
-                        $invoice->due_at?->toDateString() ?? 'unknown',
-                    ),
-                );
+                $this->notifications->notifyActiveUsers('invoice.due_soon', [
+                    'invoice_number' => $invoice->number,
+                    'tenant_name' => $tenantName,
+                    'due_date' => $invoice->due_at?->toDateString() ?? 'unknown',
+                ]);
 
                 $sent++;
             });
@@ -167,15 +160,11 @@ class BillingOpsService
 
                 $tenantName = $invoice->tenant?->name ?? 'Unknown tenant';
 
-                $this->notices->notifyBillingAlert(
-                    'Invoice overdue',
-                    sprintf(
-                        'Invoice %s for %s is overdue by %d day(s).',
-                        $invoice->number,
-                        $tenantName,
-                        $daysOverdue,
-                    ),
-                );
+                $this->notifications->notifyActiveUsers('invoice.overdue', [
+                    'invoice_number' => $invoice->number,
+                    'tenant_name' => $tenantName,
+                    'days_overdue' => $daysOverdue,
+                ]);
 
                 $sent++;
             });
@@ -211,15 +200,11 @@ class BillingOpsService
 
                 $tenantName = $subscription->tenant?->name ?? 'Unknown tenant';
 
-                $this->notices->notifyBillingAlert(
-                    'Subscription renewing soon',
-                    sprintf(
-                        'Subscription #%d for %s renews on %s.',
-                        $subscription->id,
-                        $tenantName,
-                        $subscription->ends_at?->toDateString() ?? 'unknown',
-                    ),
-                );
+                $this->notifications->notifyActiveUsers('subscription.renewing_soon', [
+                    'subscription_id' => $subscription->id,
+                    'tenant_name' => $tenantName,
+                    'renews_on' => $subscription->ends_at?->toDateString() ?? 'unknown',
+                ]);
 
                 $sent++;
             });

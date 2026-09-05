@@ -16,6 +16,7 @@ use App\Models\Landlord\PlanPrice;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
 use App\Services\Concerns\PaginatesRequests;
+use App\Services\Landlord\Notifications\NotificationDispatcher;
 use App\Services\Landlord\Plans\EntitlementService;
 use App\Services\Landlord\Tenants\TenantService;
 use Carbon\CarbonInterface;
@@ -55,7 +56,7 @@ class SubscriptionService
         private SettingService $settings,
         private TenantService $tenants,
         private EntitlementService $entitlements,
-        private NoticeService $notices,
+        private NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -87,7 +88,7 @@ class SubscriptionService
      *
      * Locks the tenant row and issues an initial invoice when not trialing.
      *
-     * @param  array{tenant_id: string, plan_id: int, plan_price_id?: int, starts_at?: string|CarbonInterface}  $data
+     * @param  array{tenant_id: string, plan_id: int, plan_price_id?: int, starts_at?: string|CarbonInterface, trial_days?: int}  $data
      *
      * @throws ModelNotFoundException When the tenant or plan does not exist.
      * @throws ValidationException|Throwable When the tenant already has a current subscription or no active price exists.
@@ -106,12 +107,25 @@ class SubscriptionService
             $plan = Plan::query()->where('status', PlanStatus::Active)->findOrFail($data['plan_id']);
             $planPrice = $this->resolvePlanPrice($plan, $data['plan_price_id'] ?? null);
             $startsAt = isset($data['starts_at']) ? Carbon::parse($data['starts_at']) : now();
+            $terms = $this->termsFromPlanPrice($plan, $planPrice, $startsAt);
+
+            if (array_key_exists('trial_days', $data)) {
+                $trialDays = max(0, (int) $data['trial_days']);
+                $trialEndsAt = $trialDays > 0 ? $startsAt->copy()->addDays($trialDays) : null;
+                $periodStart = $trialEndsAt ?? $startsAt;
+
+                $terms['trial_ends_at'] = $trialEndsAt;
+                $terms['ends_at'] = $this->nextPeriodEndFromPrice($planPrice, $periodStart);
+                $terms['status'] = $trialEndsAt instanceof CarbonInterface
+                    ? SubscriptionStatus::Trialing
+                    : SubscriptionStatus::PendingPayment;
+            }
 
             try {
                 $subscription = Subscription::query()->create([
                     'tenant_id' => $data['tenant_id'],
                     'is_current' => 1,
-                    ...$this->termsFromPlanPrice($plan, $planPrice, $startsAt),
+                    ...$terms,
                 ])->load(['tenant', 'plan', 'planPrice']);
             } catch (UniqueConstraintViolationException) {
                 throw ValidationException::withMessages([
@@ -398,14 +412,10 @@ class SubscriptionService
                 if ($becamePastDue) {
                     $tenantName = $subscription->tenant?->name ?? 'Unknown tenant';
 
-                    $this->notices->notifyBillingAlert(
-                        'Subscription past due',
-                        sprintf(
-                            'Subscription #%d for %s is past due. A renewal invoice was issued.',
-                            $subscription->id,
-                            $tenantName,
-                        ),
-                    );
+                    $this->notifications->notifyActiveUsers('subscription.past_due', [
+                        'subscription_id' => $subscription->id,
+                        'tenant_name' => $tenantName,
+                    ]);
                 }
 
                 $this->suspendTenantIfPastDueGraceElapsed($subscription->refresh());
@@ -537,14 +547,10 @@ class SubscriptionService
 
         $tenantName = $tenant?->name ?? 'Unknown tenant';
 
-        $this->notices->notifyBillingAlert(
-            'Subscription canceled',
-            sprintf(
-                'Subscription #%d for %s was canceled.',
-                $subscription->id,
-                $tenantName,
-            ),
-        );
+        $this->notifications->notifyActiveUsers('subscription.canceled', [
+            'subscription_id' => $subscription->id,
+            'tenant_name' => $tenantName,
+        ]);
 
         return $subscription->refresh();
     }

@@ -3,6 +3,7 @@
 use App\Console\Commands\Landlord\ProcessDunningCommand;
 use App\Console\Commands\Landlord\ProcessSubscriptionsCommand;
 use App\Console\Commands\Landlord\PurgeDeletedTenantsCommand;
+use App\Console\Commands\Landlord\PurgeDeletedUsersCommand;
 use App\Console\Commands\Landlord\SendBillingRemindersCommand;
 use App\Console\Commands\Landlord\VerifyPendingPaymentsCommand;
 use Illuminate\Foundation\Inspiring;
@@ -30,6 +31,10 @@ Schedule::command(ProcessDunningCommand::class)
     ->withoutOverlapping();
 
 Schedule::command(PurgeDeletedTenantsCommand::class)
+    ->daily()
+    ->withoutOverlapping();
+
+Schedule::command(PurgeDeletedUsersCommand::class)
     ->daily()
     ->withoutOverlapping();
 

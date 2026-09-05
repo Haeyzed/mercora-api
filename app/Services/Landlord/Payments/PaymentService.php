@@ -13,7 +13,7 @@ use App\Models\Landlord\PaymentWebhookEvent;
 use App\Models\Landlord\User;
 use App\Services\Concerns\PaginatesRequests;
 use App\Services\Landlord\InvoiceService;
-use App\Services\Landlord\NoticeService;
+use App\Services\Landlord\Notifications\NotificationDispatcher;
 use App\Services\Landlord\Payments\DTOs\PaymentInitializationData;
 use App\Services\Landlord\Payments\DTOs\PaymentVerificationResult;
 use App\Services\Landlord\Payments\DTOs\WebhookPayload;
@@ -50,7 +50,7 @@ class PaymentService
         private InvoiceService $invoiceService,
         private SubscriptionService $subscriptionService,
         private SettingService $settings,
-        private NoticeService $notices,
+        private NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -174,6 +174,53 @@ class PaymentService
     }
 
     /**
+     * Refund a successful payment with the provider and mark it refunded locally.
+     *
+     * Does not reopen or void the related invoice (ledger remains paid).
+     *
+     * @throws ValidationException When the payment is not successful.
+     * @throws PaymentException When the provider rejects the refund.
+     */
+    public function refund(Payment $payment, ?string $reason = null): Payment
+    {
+        if ($payment->status === PaymentStatus::Refunded) {
+            return $payment;
+        }
+
+        if ($payment->status !== PaymentStatus::Successful) {
+            throw ValidationException::withMessages([
+                'status' => ['Only successful payments can be refunded.'],
+            ]);
+        }
+
+        $driver = $this->paymentManager->driver($payment->provider->value);
+        $result = $driver->refund(
+            $payment->provider_reference ?? $payment->reference,
+            $payment->amount,
+            $payment->currency,
+            $reason,
+        );
+
+        if ($result->status !== PaymentStatus::Refunded) {
+            throw PaymentException::verificationFailed('The provider did not confirm the refund.');
+        }
+
+        $payment->update([
+            'status' => PaymentStatus::Refunded,
+            'refunded_at' => now(),
+            'provider_response' => $result->providerResponse,
+        ]);
+
+        $this->notifications->notifyActiveUsers('payment.refunded', [
+            'reference' => $payment->reference,
+            'amount' => number_format($payment->amount / 100, 2),
+            'currency' => $payment->currency,
+        ]);
+
+        return $payment->refresh();
+    }
+
+    /**
      * Validate, deduplicate, and process an inbound provider webhook.
      *
      * Provider boundary: signature verification is delegated to the driver before any
@@ -260,15 +307,11 @@ class PaymentService
                     }
                 }
 
-                $this->notices->notifyBillingAlert(
-                    'Payment successful',
-                    sprintf(
-                        'Payment %s for %s %s was marked successful.',
-                        $payment->reference,
-                        number_format($payment->amount / 100, 2),
-                        $payment->currency,
-                    ),
-                );
+                $this->notifications->notifyActiveUsers('payment.successful', [
+                    'reference' => $payment->reference,
+                    'amount' => number_format($payment->amount / 100, 2),
+                    'currency' => $payment->currency,
+                ]);
 
                 return $payment->refresh();
             }

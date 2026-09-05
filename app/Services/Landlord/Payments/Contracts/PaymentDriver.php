@@ -68,6 +68,17 @@ interface PaymentDriver
     public function verify(string $reference, int $expectedAmount, string $expectedCurrency): PaymentVerificationResult;
 
     /**
+     * Refund a successful charge with the provider.
+     *
+     * @param  string  $reference  Provider or merchant reference for the original charge.
+     * @param  int  $amount  Amount in minor units.
+     * @param  string  $currency  ISO 4217 currency code.
+     *
+     * @throws PaymentException When the provider rejects the refund.
+     */
+    public function refund(string $reference, int $amount, string $currency, ?string $reason = null): PaymentVerificationResult;
+
+    /**
      * Validate an inbound webhook using the provider's signing scheme.
      *
      * Must use a constant-time comparison where applicable. Returns false when

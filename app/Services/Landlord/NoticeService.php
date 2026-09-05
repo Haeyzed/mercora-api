@@ -7,7 +7,6 @@ namespace App\Services\Landlord;
 use App\Enums\Landlord\NoticeChannel;
 use App\Enums\Landlord\NoticeStatus;
 use App\Models\Landlord\Notice;
-use App\Models\Landlord\User;
 use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -23,10 +22,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * - New notices are created as unread; mail is not sent from this service.
  * - Only unread notices can be updated or marked read.
  * - Channel creation respects {@see notifications.email_enabled} and {@see notifications.in_app_enabled}.
- * - Lifecycle fan-out respects {@see notifications.billing_alerts} and {@see notifications.tenant_lifecycle_alerts}.
  *
  * Side effects: creates, updates, soft-deletes, and restores {@see Notice} records;
- * reads {@see SettingService} for channel and alert policy.
+ * reads {@see SettingService} for channel policy.
  */
 class NoticeService
 {
@@ -171,64 +169,6 @@ class NoticeService
                 'status' => NoticeStatus::Read,
                 'read_at' => now(),
             ]);
-    }
-
-    /**
-     * Fan out an in-app billing alert to active landlord users.
-     *
-     * No-op when billing alerts or the in-app channel are disabled. Never throws for policy gates.
-     */
-    public function notifyBillingAlert(string $title, string $body): int
-    {
-        if (! (bool) $this->settings->value('notifications.billing_alerts', true)) {
-            return 0;
-        }
-
-        return $this->fanOutInApp($title, $body);
-    }
-
-    /**
-     * Fan out an in-app tenant lifecycle alert to active landlord users.
-     *
-     * No-op when tenant lifecycle alerts or the in-app channel are disabled. Never throws for policy gates.
-     */
-    public function notifyTenantLifecycleAlert(string $title, string $body): int
-    {
-        if (! (bool) $this->settings->value('notifications.tenant_lifecycle_alerts', true)) {
-            return 0;
-        }
-
-        return $this->fanOutInApp($title, $body);
-    }
-
-    /**
-     * Create an unread in-app notice for each active landlord user.
-     */
-    private function fanOutInApp(string $title, string $body): int
-    {
-        if (! (bool) $this->settings->value('notifications.in_app_enabled', true)) {
-            return 0;
-        }
-
-        $created = 0;
-
-        User::query()
-            ->where('is_active', true)
-            ->pluck('id')
-            ->each(function (int $userId) use ($title, $body, &$created): void {
-                Notice::query()->create([
-                    'user_id' => $userId,
-                    'title' => $title,
-                    'body' => $body,
-                    'channel' => NoticeChannel::InApp,
-                    'status' => NoticeStatus::Unread,
-                    'read_at' => null,
-                ]);
-
-                $created++;
-            });
-
-        return $created;
     }
 
     /**

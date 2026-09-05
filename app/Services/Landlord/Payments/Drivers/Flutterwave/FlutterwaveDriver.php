@@ -135,6 +135,33 @@ class FlutterwaveDriver implements PaymentDriver
     }
 
     /**
+     * @throws PaymentException
+     */
+    public function refund(string $reference, int $amount, string $currency, ?string $reason = null): PaymentVerificationResult
+    {
+        $response = $this->client()->post('/transactions/'.$reference.'/refund', array_filter([
+            'amount' => round($amount / 100, 2),
+            'comments' => $reason,
+        ], fn (mixed $value): bool => $value !== null && $value !== ''));
+
+        if (! $response->successful()) {
+            throw PaymentException::verificationFailed((string) ($response->json('message') ?? 'Flutterwave refund failed.'));
+        }
+
+        $data = $response->json('data', []);
+
+        return new PaymentVerificationResult(
+            reference: $reference,
+            providerReference: isset($data['id']) ? (string) $data['id'] : $reference,
+            status: PaymentStatus::Refunded,
+            amount: $amount,
+            currency: strtoupper($currency),
+            paymentMethod: null,
+            providerResponse: is_array($data) ? $data : ($response->json() ?? []),
+        );
+    }
+
+    /**
      * Validate the Flutterwave secret hash header against configured secret_hash.
      *
      * Returns false when secret_hash is not configured; never accepts unsigned webhooks in that case.

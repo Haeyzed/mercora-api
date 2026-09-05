@@ -45,6 +45,7 @@ enum Permission: string
 
     case PaymentsView = 'payments.view';
     case PaymentsVerify = 'payments.verify';
+    case PaymentsRefund = 'payments.refund';
 
     case ApiKeysView = 'api_keys.view';
     case ApiKeysCreate = 'api_keys.create';
@@ -57,6 +58,11 @@ enum Permission: string
     case NoticesUpdate = 'notices.update';
     case NoticesRead = 'notices.read';
     case NoticesDelete = 'notices.delete';
+
+    case NotificationTemplatesView = 'notification_templates.view';
+    case NotificationTemplatesCreate = 'notification_templates.create';
+    case NotificationTemplatesUpdate = 'notification_templates.update';
+    case NotificationTemplatesDelete = 'notification_templates.delete';
 
     case SettingsView = 'settings.view';
     case SettingsCreate = 'settings.create';

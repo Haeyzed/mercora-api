@@ -27,4 +27,9 @@ class PaymentPolicy
     {
         return $this->allow($user, Permission::PaymentsVerify);
     }
+
+    public function refund(User $user, Payment $payment): bool
+    {
+        return $this->allow($user, Permission::PaymentsRefund);
+    }
 }

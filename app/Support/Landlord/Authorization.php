@@ -49,6 +49,7 @@ class Authorization
                 Permission::NoticesCreate->value,
                 Permission::NoticesUpdate->value,
                 Permission::NoticesRead->value,
+                Permission::NotificationTemplatesView->value,
                 Permission::SettingsView->value,
                 Permission::ActivitiesView->value,
                 Permission::UsersView->value,

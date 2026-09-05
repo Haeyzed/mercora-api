@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             WorldSeeder::class,
             RolesAndPermissionsSeeder::class,
             UserSeeder::class,
+            Landlord\NotificationTemplateSeeder::class,
         ]);
     }
 }

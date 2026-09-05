@@ -8,7 +8,7 @@ use App\Enums\Landlord\TenantStatus;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Tenant;
 use App\Services\Concerns\PaginatesRequests;
-use App\Services\Landlord\NoticeService;
+use App\Services\Landlord\Notifications\NotificationDispatcher;
 use App\Services\Landlord\SettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -28,7 +28,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * - Soft delete does not drop the tenant database; force delete does.
  *
  * Side effects: creates tenants and domains, dispatches {@see ProvisionTenantJob},
- * updates tenant status, emits tenant lifecycle notices, and soft-deletes or force-deletes
+ * updates tenant status, emits templated tenant lifecycle notices, and soft-deletes or force-deletes
  * tenant records; reads {@see SettingService} for the provisioning queue.
  */
 class TenantService
@@ -38,7 +38,7 @@ class TenantService
     public function __construct(
         private TenantProvisioningVerifier $provisioningVerifier,
         private SettingService $settings,
-        private NoticeService $notices,
+        private NotificationDispatcher $notifications,
     ) {}
 
     /**
@@ -189,10 +189,9 @@ class TenantService
             'status' => TenantStatus::Suspended,
         ]);
 
-        $this->notices->notifyTenantLifecycleAlert(
-            'Tenant suspended',
-            sprintf('Tenant %s was suspended.', $tenant->name),
-        );
+        $this->notifications->notifyActiveUsers('tenant.suspended', [
+            'tenant_name' => $tenant->name,
+        ]);
 
         return $tenant->refresh();
     }

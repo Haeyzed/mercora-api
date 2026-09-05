@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Landlord;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Landlord\Payments\RefundPaymentRequest;
 use App\Http\Resources\Landlord\Payments\PaymentResource;
 use App\Models\Landlord\Payment;
 use App\Services\Landlord\Payments\Exceptions\PaymentException;
@@ -63,6 +64,25 @@ class PaymentController extends Controller
 
         try {
             $payment = $this->paymentService->verify($payment);
+        } catch (PaymentException $exception) {
+            throw ValidationException::withMessages([
+                'payment' => $exception->getMessage(),
+            ]);
+        }
+
+        return $payment->toResource(PaymentResource::class);
+    }
+
+    /**
+     * Refund a successful payment with the provider.
+     */
+    #[Endpoint(operationId: 'refundLandlordPayment', title: 'Refund a payment')]
+    public function refund(RefundPaymentRequest $request, Payment $payment): PaymentResource
+    {
+        $this->authorize('refund', $payment);
+
+        try {
+            $payment = $this->paymentService->refund($payment, $request->validated('reason'));
         } catch (PaymentException $exception) {
             throw ValidationException::withMessages([
                 'payment' => $exception->getMessage(),

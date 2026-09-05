@@ -144,6 +144,43 @@ class PaypalDriver implements PaymentDriver
     }
 
     /**
+     * Refund a PayPal capture. {@see $reference} must be a capture id.
+     *
+     * @throws PaymentException
+     */
+    public function refund(string $reference, int $amount, string $currency, ?string $reason = null): PaymentVerificationResult
+    {
+        $payload = [
+            'amount' => [
+                'value' => number_format($amount / 100, 2, '.', ''),
+                'currency_code' => strtoupper($currency),
+            ],
+        ];
+
+        if ($reason !== null && $reason !== '') {
+            $payload['note_to_payer'] = $reason;
+        }
+
+        $response = $this->client()->post('/v2/payments/captures/'.rawurlencode($reference).'/refund', $payload);
+
+        if (! $response->successful()) {
+            throw PaymentException::verificationFailed((string) ($response->json('message') ?? 'PayPal refund failed.'));
+        }
+
+        $data = $response->json() ?? [];
+
+        return new PaymentVerificationResult(
+            reference: $reference,
+            providerReference: isset($data['id']) ? (string) $data['id'] : $reference,
+            status: PaymentStatus::Refunded,
+            amount: $amount,
+            currency: strtoupper($currency),
+            paymentMethod: null,
+            providerResponse: is_array($data) ? $data : [],
+        );
+    }
+
+    /**
      * Validate webhook via PayPal's verify-webhook-signature API.
      *
      * {@see $signature} must be a JSON object of PayPal transmission headers.

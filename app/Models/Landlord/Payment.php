@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'provider_response',
     'paid_at',
     'failed_at',
+    'refunded_at',
 ])]
 #[Hidden(['provider_response'])]
 class Payment extends Model
@@ -74,6 +75,7 @@ class Payment extends Model
             'provider_response' => 'array',
             'paid_at' => 'datetime',
             'failed_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 

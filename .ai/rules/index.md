@@ -14,7 +14,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Landlord/SubscriptionService.php | .ai/rules/landlord-subscriptions.md |
 | app/Models/Landlord/** | .ai/rules/landlord.md |
 | app/Models/** | .ai/rules/models.md |
-| app/Http/Controllers/Landlord/NotificationController.php, app/Services/Landlord/NoticeService.php | .ai/rules/notifications.md |
+| app/Http/Controllers/Landlord/NotificationController.php, app/Http/Controllers/Landlord/NotificationTemplateController.php, app/Http/Controllers/Landlord/NotificationPreferenceController.php, app/Services/Landlord/NoticeService.php, app/Services/Landlord/Notifications/** | .ai/rules/notifications.md |
 | app/Services/Landlord/Payments/** | .ai/rules/payments.md |
 | app/Http/Controllers/Landlord/Plans/** | .ai/rules/plans.md |
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |
