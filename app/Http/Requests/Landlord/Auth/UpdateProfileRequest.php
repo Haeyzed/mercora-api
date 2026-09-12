@@ -38,6 +38,12 @@ class UpdateProfileRequest extends FormRequest
              */
             'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user?->id)],
             /**
+             * Optional E.164 phone number for SMS notifications.
+             *
+             * @example +15551234567
+             */
+            'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
+            /**
              * Optional profile image. Replaces the current avatar when provided.
              */
             'avatar' => MediaValidation::avatar(required: false),

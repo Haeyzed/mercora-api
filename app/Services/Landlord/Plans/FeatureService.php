@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Plans;
 
 use App\Models\Landlord\Feature;
+use App\Models\Landlord\Subscription;
 use App\Services\Concerns\PaginatesRequests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -24,6 +25,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class FeatureService
 {
     use PaginatesRequests;
+
+    public function __construct(private EntitlementService $entitlements) {}
 
     /**
      * Paginate features using model filter and search scopes.
@@ -86,6 +89,8 @@ class FeatureService
     {
         $feature->update($data);
 
+        $this->forgetEntitlementsForFeature($feature);
+
         return $feature->refresh();
     }
 
@@ -94,6 +99,7 @@ class FeatureService
      */
     public function destroy(Feature $feature): void
     {
+        $this->forgetEntitlementsForFeature($feature);
         $feature->delete();
     }
 
@@ -129,5 +135,28 @@ class FeatureService
     public function restoreMany(array $ids): void
     {
         Feature::onlyTrashed()->whereKey($ids)->restore();
+    }
+
+    /**
+     * Invalidate entitlements for tenants on plans that include this feature.
+     */
+    private function forgetEntitlementsForFeature(Feature $feature): void
+    {
+        $planIds = $feature->plans()->pluck('plans.id');
+
+        if ($planIds->isEmpty()) {
+            return;
+        }
+
+        Subscription::query()
+            ->whereIn('plan_id', $planIds)
+            ->current()
+            ->with('tenant')
+            ->get()
+            ->each(function (Subscription $subscription): void {
+                if ($subscription->tenant !== null) {
+                    $this->entitlements->forget($subscription->tenant);
+                }
+            });
     }
 }

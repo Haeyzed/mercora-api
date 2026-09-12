@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\InitializeTenancyByDomainOrHeader;
+use App\Http\Middleware\PreventAccessFromCentralDomainsUnlessTenantHeader;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -135,8 +137,10 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $tenancyMiddleware = [
             // Even higher priority than the initialization middleware
+            PreventAccessFromCentralDomainsUnlessTenantHeader::class,
             Middleware\PreventAccessFromCentralDomains::class,
 
+            InitializeTenancyByDomainOrHeader::class,
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,
             Middleware\InitializeTenancyByDomainOrSubdomain::class,

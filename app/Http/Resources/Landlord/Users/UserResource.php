@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
             'is_active' => $this->is_active,
             'email_verified_at' => $this->email_verified_at,
             'roles' => RoleResource::collection($this->whenLoaded('roles')),

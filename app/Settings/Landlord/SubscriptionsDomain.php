@@ -79,8 +79,8 @@ final class SubscriptionsDomain implements SettingsSchema
             ),
             'subscriptions.default_billing_interval' => new SettingDefinition(
                 type: SettingType::String,
-                default: 'month',
-                rules: ['sometimes', 'string', Rule::in(['day', 'week', 'month', 'year'])],
+                default: 'monthly',
+                rules: ['sometimes', 'string', Rule::in(['monthly', 'yearly'])],
             ),
         ];
     }

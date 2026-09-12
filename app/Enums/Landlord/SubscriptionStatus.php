@@ -51,4 +51,31 @@ enum SubscriptionStatus: string
             self::PendingPayment,
         ];
     }
+
+    /**
+     * Whether this status grants tenant product API access.
+     *
+     * PastDue and PendingPayment do not — clients may still authenticate
+     * for billing UI; product routes return 402 until Active or Trialing.
+     */
+    public function grantsAccess(): bool
+    {
+        return match ($this) {
+            self::Trialing, self::Active => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Statuses that grant tenant product API access.
+     *
+     * @return list<self>
+     */
+    public static function accessGrantingCases(): array
+    {
+        return [
+            self::Trialing,
+            self::Active,
+        ];
+    }
 }

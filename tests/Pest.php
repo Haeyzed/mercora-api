@@ -5,6 +5,7 @@ use App\Models\Landlord\User;
 use App\Support\Landlord\Authorization;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\TenantTestContext;
 use Tests\TestCase;
 
 /*
@@ -121,4 +122,29 @@ function fakeFlutterwaveVerify(string $reference, int $amountMinor, string $curr
             ],
         ]),
     ]);
+}
+
+/**
+ * @return array{0: TenantTestContext, 1: string}
+ */
+function loginTenantStaff(TenantTestContext $context): array
+{
+    $context->createUser([
+        'email' => 'staff@acme.test',
+        'password' => 'password',
+    ]);
+
+    $token = test()->postJson($context->url('/api/tenant/auth/login'), [
+        'email' => 'staff@acme.test',
+        'password' => 'password',
+    ])->json('data.token');
+
+    auth()->forgetGuards();
+
+    return [$context, $token];
+}
+
+function provisionTenantContext(): TenantTestContext
+{
+    return TenantTestContext::provision();
 }

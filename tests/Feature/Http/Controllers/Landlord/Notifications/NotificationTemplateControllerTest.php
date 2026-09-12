@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
 use App\Models\Landlord\NotificationTemplate;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
@@ -50,7 +50,7 @@ describe('store', function () {
         $this->postJson('/api/landlord/notification-templates', [
             'key' => 'custom.alert',
             'name' => 'Custom Alert',
-            'channels' => [NoticeChannel::InApp->value],
+            'channels' => [NotificationChannel::InApp->value],
             'variables' => ['name'],
             'title' => 'Hello {{name}}',
             'body' => 'Body {{name}}',
@@ -64,7 +64,7 @@ describe('store', function () {
         $this->postJson('/api/landlord/notification-templates', [
             'key' => 'custom.alert',
             'name' => 'Custom Alert',
-            'channels' => [NoticeChannel::InApp->value],
+            'channels' => [NotificationChannel::InApp->value],
             'variables' => ['name'],
             'title' => 'Hello {{unknown}}',
             'body' => 'Body',

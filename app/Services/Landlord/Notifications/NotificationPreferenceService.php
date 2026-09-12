@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord\Notifications;
 
-use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
 use App\Models\Landlord\NotificationPreference;
 use App\Models\Landlord\NotificationTemplate;
 use App\Models\Landlord\User;
@@ -143,9 +143,6 @@ class NotificationPreferenceService
 
     private function isLockableChannel(string $channel): bool
     {
-        return in_array($channel, [
-            NoticeChannel::InApp->value,
-            NoticeChannel::Mail->value,
-        ], true);
+        return NotificationChannel::tryFrom($channel)?->isLockable() ?? false;
     }
 }

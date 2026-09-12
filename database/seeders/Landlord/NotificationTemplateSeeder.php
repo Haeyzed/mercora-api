@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Landlord;
 
-use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
 use App\Models\Landlord\NotificationTemplate;
 use Illuminate\Database\Seeder;
 
@@ -15,7 +15,10 @@ class NotificationTemplateSeeder extends Seeder
 {
     public function run(): void
     {
-        $channels = [NoticeChannel::InApp->value, NoticeChannel::Mail->value];
+        $channels = array_map(
+            fn (NotificationChannel $channel): string => $channel->value,
+            NotificationChannel::cases(),
+        );
 
         $templates = [
             [
@@ -28,6 +31,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Payment {{reference}} for {{amount}} {{currency}} was marked successful.',
                 'email_subject' => 'Payment successful',
                 'email_body' => 'Payment {{reference}} for {{amount}} {{currency}} was marked successful.',
+                'push_title' => 'Payment successful',
+                'push_body' => 'Payment {{reference}} for {{amount}} {{currency}} was marked successful.',
+                'sms_body' => 'Payment {{reference}} for {{amount}} {{currency}} was marked successful.',
                 'is_mandatory' => false,
             ],
             [
@@ -40,6 +46,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Payment {{reference}} for {{amount}} {{currency}} was refunded.',
                 'email_subject' => 'Payment refunded',
                 'email_body' => 'Payment {{reference}} for {{amount}} {{currency}} was refunded.',
+                'push_title' => 'Payment refunded',
+                'push_body' => 'Payment {{reference}} for {{amount}} {{currency}} was refunded.',
+                'sms_body' => 'Payment {{reference}} for {{amount}} {{currency}} was refunded.',
                 'is_mandatory' => false,
             ],
             [
@@ -52,6 +61,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Subscription #{{subscription_id}} for {{tenant_name}} is past due. A renewal invoice was issued.',
                 'email_subject' => 'Subscription past due',
                 'email_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} is past due. A renewal invoice was issued.',
+                'push_title' => 'Subscription past due',
+                'push_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} is past due.',
+                'sms_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} is past due.',
                 'is_mandatory' => false,
             ],
             [
@@ -64,6 +76,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Subscription #{{subscription_id}} for {{tenant_name}} was canceled.',
                 'email_subject' => 'Subscription canceled',
                 'email_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} was canceled.',
+                'push_title' => 'Subscription canceled',
+                'push_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} was canceled.',
+                'sms_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} was canceled.',
                 'is_mandatory' => false,
             ],
             [
@@ -76,6 +91,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Invoice {{invoice_number}} for {{tenant_name}} is due on {{due_date}}.',
                 'email_subject' => 'Invoice due soon',
                 'email_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is due on {{due_date}}.',
+                'push_title' => 'Invoice due soon',
+                'push_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is due on {{due_date}}.',
+                'sms_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is due on {{due_date}}.',
                 'is_mandatory' => false,
             ],
             [
@@ -88,6 +106,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Invoice {{invoice_number}} for {{tenant_name}} is overdue by {{days_overdue}} day(s).',
                 'email_subject' => 'Invoice overdue',
                 'email_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is overdue by {{days_overdue}} day(s).',
+                'push_title' => 'Invoice overdue',
+                'push_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is overdue by {{days_overdue}} day(s).',
+                'sms_body' => 'Invoice {{invoice_number}} for {{tenant_name}} is overdue by {{days_overdue}} day(s).',
                 'is_mandatory' => false,
             ],
             [
@@ -100,6 +121,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Subscription #{{subscription_id}} for {{tenant_name}} renews on {{renews_on}}.',
                 'email_subject' => 'Subscription renewing soon',
                 'email_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} renews on {{renews_on}}.',
+                'push_title' => 'Subscription renewing soon',
+                'push_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} renews on {{renews_on}}.',
+                'sms_body' => 'Subscription #{{subscription_id}} for {{tenant_name}} renews on {{renews_on}}.',
                 'is_mandatory' => false,
             ],
             [
@@ -112,6 +136,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Dunning attempt {{attempt}} for subscription #{{subscription_id}} ({{tenant_name}}). Payment is still outstanding.',
                 'email_subject' => 'Payment dunning reminder',
                 'email_body' => 'Dunning attempt {{attempt}} for subscription #{{subscription_id}} ({{tenant_name}}). Payment is still outstanding.',
+                'push_title' => 'Payment dunning reminder',
+                'push_body' => 'Dunning attempt {{attempt}} for subscription #{{subscription_id}} ({{tenant_name}}).',
+                'sms_body' => 'Dunning attempt {{attempt}} for subscription #{{subscription_id}} ({{tenant_name}}).',
                 'is_mandatory' => false,
             ],
             [
@@ -124,6 +151,9 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Tenant {{tenant_name}} was suspended.',
                 'email_subject' => 'Tenant suspended',
                 'email_body' => 'Tenant {{tenant_name}} was suspended.',
+                'push_title' => 'Tenant suspended',
+                'push_body' => 'Tenant {{tenant_name}} was suspended.',
+                'sms_body' => 'Tenant {{tenant_name}} was suspended.',
                 'is_mandatory' => false,
             ],
             [
@@ -136,7 +166,130 @@ class NotificationTemplateSeeder extends Seeder
                 'body' => 'Your landlord account and tenant workspace are ready.',
                 'email_subject' => 'Welcome to Mercora',
                 'email_body' => 'Your landlord account and tenant workspace are ready.',
+                'push_title' => 'Welcome to Mercora',
+                'push_body' => 'Your landlord account and tenant workspace are ready.',
+                'sms_body' => 'Your landlord account and tenant workspace are ready.',
                 'is_mandatory' => true,
+            ],
+            [
+                'key' => 'auth.password_reset',
+                'name' => 'Password Reset Requested',
+                'description' => 'Sent when a landlord user requests a password reset.',
+                'channels' => $channels,
+                'variables' => ['user_name', 'email', 'reset_url', 'expires_minutes'],
+                'title' => 'Password reset requested',
+                'body' => 'A password reset was requested for {{email}}. Check your email for the reset link.',
+                'email_subject' => 'Reset your password',
+                'email_body' => 'Hi {{user_name}}, reset your password using this link: {{reset_url}}. This link expires in {{expires_minutes}} minutes. If you did not request a reset, no further action is required.',
+                'push_title' => 'Password reset requested',
+                'push_body' => 'A password reset was requested for your account.',
+                'sms_body' => 'Password reset requested for {{email}}. Check your email for the link.',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'auth.password_changed',
+                'name' => 'Password Changed',
+                'description' => 'Sent after a successful password change or reset.',
+                'channels' => $channels,
+                'variables' => ['user_name', 'email'],
+                'title' => 'Password changed',
+                'body' => 'Hi {{user_name}}, your password was changed successfully.',
+                'email_subject' => 'Your password was changed',
+                'email_body' => 'Hi {{user_name}}, your password for {{email}} was changed successfully.',
+                'push_title' => 'Password changed',
+                'push_body' => 'Your password was changed successfully.',
+                'sms_body' => 'Your password for {{email}} was changed successfully.',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'tenant.activated',
+                'name' => 'Tenant Activated',
+                'description' => 'Fan-out when a provisioned tenant is activated.',
+                'channels' => $channels,
+                'variables' => ['tenant_name'],
+                'title' => 'Tenant activated',
+                'body' => 'Tenant {{tenant_name}} was activated.',
+                'email_subject' => 'Tenant activated',
+                'email_body' => 'Tenant {{tenant_name}} was activated.',
+                'push_title' => 'Tenant activated',
+                'push_body' => 'Tenant {{tenant_name}} was activated.',
+                'sms_body' => 'Tenant {{tenant_name}} was activated.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.reactivated',
+                'name' => 'Tenant Reactivated',
+                'description' => 'Fan-out when a suspended tenant is reactivated.',
+                'channels' => $channels,
+                'variables' => ['tenant_name'],
+                'title' => 'Tenant reactivated',
+                'body' => 'Tenant {{tenant_name}} was reactivated.',
+                'email_subject' => 'Tenant reactivated',
+                'email_body' => 'Tenant {{tenant_name}} was reactivated.',
+                'push_title' => 'Tenant reactivated',
+                'push_body' => 'Tenant {{tenant_name}} was reactivated.',
+                'sms_body' => 'Tenant {{tenant_name}} was reactivated.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.provisioned',
+                'name' => 'Tenant Provisioned',
+                'description' => 'Fan-out when tenant provisioning completes successfully.',
+                'channels' => $channels,
+                'variables' => ['tenant_name'],
+                'title' => 'Tenant provisioned',
+                'body' => 'Tenant {{tenant_name}} finished provisioning and is active.',
+                'email_subject' => 'Tenant provisioned',
+                'email_body' => 'Tenant {{tenant_name}} finished provisioning and is active.',
+                'push_title' => 'Tenant provisioned',
+                'push_body' => 'Tenant {{tenant_name}} finished provisioning.',
+                'sms_body' => 'Tenant {{tenant_name}} finished provisioning.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.provision_failed',
+                'name' => 'Tenant Provision Failed',
+                'description' => 'Fan-out when tenant provisioning fails.',
+                'channels' => $channels,
+                'variables' => ['tenant_name', 'error'],
+                'title' => 'Tenant provision failed',
+                'body' => 'Provisioning for tenant {{tenant_name}} failed: {{error}}',
+                'email_subject' => 'Tenant provision failed',
+                'email_body' => 'Provisioning for tenant {{tenant_name}} failed: {{error}}',
+                'push_title' => 'Tenant provision failed',
+                'push_body' => 'Provisioning for tenant {{tenant_name}} failed.',
+                'sms_body' => 'Provisioning for tenant {{tenant_name}} failed.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'payment.failed',
+                'name' => 'Payment Failed',
+                'description' => 'Fan-out when a payment is marked failed.',
+                'channels' => $channels,
+                'variables' => ['reference', 'amount', 'currency'],
+                'title' => 'Payment failed',
+                'body' => 'Payment {{reference}} for {{amount}} {{currency}} failed.',
+                'email_subject' => 'Payment failed',
+                'email_body' => 'Payment {{reference}} for {{amount}} {{currency}} failed.',
+                'push_title' => 'Payment failed',
+                'push_body' => 'Payment {{reference}} for {{amount}} {{currency}} failed.',
+                'sms_body' => 'Payment {{reference}} for {{amount}} {{currency}} failed.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'payment.cancelled',
+                'name' => 'Payment Cancelled',
+                'description' => 'Fan-out when a payment is marked cancelled.',
+                'channels' => $channels,
+                'variables' => ['reference', 'amount', 'currency'],
+                'title' => 'Payment cancelled',
+                'body' => 'Payment {{reference}} for {{amount}} {{currency}} was cancelled.',
+                'email_subject' => 'Payment cancelled',
+                'email_body' => 'Payment {{reference}} for {{amount}} {{currency}} was cancelled.',
+                'push_title' => 'Payment cancelled',
+                'push_body' => 'Payment {{reference}} for {{amount}} {{currency}} was cancelled.',
+                'sms_body' => 'Payment {{reference}} for {{amount}} {{currency}} was cancelled.',
+                'is_mandatory' => false,
             ],
         ];
 

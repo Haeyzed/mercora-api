@@ -85,9 +85,13 @@ class TenantService
     }
 
     /**
-     * Create a tenant and its first domain, then optionally dispatch provisioning.
+     * Create a tenant and its first domain, stash pending admin, then optionally dispatch provisioning.
      *
-     * @param  array{name: string, domain: string}  $data
+     * @param  array{
+     *     name: string,
+     *     domain: string,
+     *     admin: array{name: string, email: string, password: string, phone?: string|null}
+     * }  $data
      *
      * @throws ValidationException When the domain violates tenancy policy or provisioning is at capacity.
      */
@@ -99,6 +103,16 @@ class TenantService
             $tenant = Tenant::query()->create([
                 'name' => $data['name'],
                 'status' => TenantStatus::Pending,
+                'pending_provision' => [
+                    'admin' => [
+                        'name' => $data['admin']['name'],
+                        'email' => $data['admin']['email'],
+                        'password' => $data['admin']['password'],
+                        'phone' => $data['admin']['phone'] ?? null,
+                    ],
+                    'intended_status' => TenantStatus::Active->value,
+                ],
+                'provision_error' => null,
             ]);
 
             $tenant->createDomain($data['domain']);
@@ -169,6 +183,10 @@ class TenantService
             'provision_error' => null,
         ]);
 
+        $this->notifications->notifyActiveUsers('tenant.activated', [
+            'tenant_name' => $tenant->name,
+        ]);
+
         return $tenant->refresh();
     }
 
@@ -213,6 +231,10 @@ class TenantService
             'status' => TenantStatus::Active,
         ]);
 
+        $this->notifications->notifyActiveUsers('tenant.reactivated', [
+            'tenant_name' => $tenant->name,
+        ]);
+
         return $tenant->refresh();
     }
 
@@ -237,6 +259,10 @@ class TenantService
             'provisioned_at' => $tenant->provisioned_at ?? now(),
             'provision_error' => null,
         ]);
+
+        $this->notifications->notifyActiveUsers('tenant.provisioned', [
+            'tenant_name' => $tenant->name,
+        ]);
     }
 
     /**
@@ -247,6 +273,11 @@ class TenantService
         $tenant->update([
             'status' => TenantStatus::Failed,
             'provision_error' => $message,
+        ]);
+
+        $this->notifications->notifyActiveUsers('tenant.provision_failed', [
+            'tenant_name' => $tenant->name,
+            'error' => $message,
         ]);
     }
 

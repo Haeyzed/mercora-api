@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
  * Entitlement definition attachable to catalog plans.
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Feature extends Model
 {
     /** @use HasFactory<FeatureFactory> */
-    use HasFactory, SoftDeletes;
+    use CentralConnection, HasFactory, SoftDeletes;
 
     /**
      * Create a new factory instance for the model.

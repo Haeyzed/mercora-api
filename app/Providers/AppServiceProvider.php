@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\Landlord\Notifications\SmsProvider;
 use App\Enums\Landlord\RoleName;
 use App\Models\Landlord\User;
 use App\Models\Shared\City;
@@ -14,6 +15,12 @@ use App\Models\Shared\State;
 use App\Models\Shared\Timezone;
 use App\Policies\Landlord\RolePolicy;
 use App\Policies\Landlord\WorldPolicy;
+use App\Services\Landlord\Notifications\ChannelResolver;
+use App\Services\Landlord\Notifications\Channels\InAppChannel;
+use App\Services\Landlord\Notifications\Channels\MailChannel;
+use App\Services\Landlord\Notifications\Channels\PushChannel;
+use App\Services\Landlord\Notifications\Channels\SmsChannel;
+use App\Services\Landlord\Notifications\Sms\SmsManager;
 use App\Services\Landlord\SettingService;
 use App\Settings\Landlord\ApiDomain;
 use App\Settings\Landlord\BillingDomain;
@@ -58,6 +65,23 @@ class AppServiceProvider extends ServiceProvider
             $registry->register(new ComplianceDomain);
 
             return $registry;
+        });
+
+        $this->app->tag([
+            InAppChannel::class,
+            MailChannel::class,
+            PushChannel::class,
+            SmsChannel::class,
+        ], 'landlord.notification.channels');
+
+        $this->app->when(ChannelResolver::class)
+            ->needs('$channels')
+            ->giveTagged('landlord.notification.channels');
+
+        $this->app->singleton(SmsManager::class);
+
+        $this->app->bind(SmsProvider::class, function ($app): SmsProvider {
+            return $app->make(SmsManager::class)->driver();
         });
     }
 
@@ -123,6 +147,26 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute($perMinute)->by('landlord-api:'.$key),
                 Limit::perSecond(max(1, (int) ceil($burst / 60)))->by('landlord-api-burst:'.$key),
+            ];
+        });
+
+        RateLimiter::for('tenant-auth', function (Request $request) {
+            $attempts = max(1, (int) $this->setting('security.max_login_attempts', 5));
+            $lockout = max(1, (int) $this->setting('security.lockout_minutes', 15));
+
+            return Limit::perMinutes($lockout, $attempts)->by(Str::transliterate(
+                Str::lower($request->string('email')->toString()).'|'.$request->ip()
+            ));
+        });
+
+        RateLimiter::for('tenant-api', function (Request $request) {
+            $perMinute = max(1, (int) $this->setting('api.rate_limit_per_minute', 60));
+            $burst = max($perMinute, (int) $this->setting('api.burst_limit', 120));
+            $key = (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
+
+            return [
+                Limit::perMinute($perMinute)->by('tenant-api:'.$key),
+                Limit::perSecond(max(1, (int) ceil($burst / 60)))->by('tenant-api-burst:'.$key),
             ];
         });
     }

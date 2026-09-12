@@ -86,4 +86,20 @@ class SubscriptionFactory extends Factory
             'is_current' => null,
         ]);
     }
+
+    public function pastDue(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => SubscriptionStatus::PastDue,
+            'is_current' => 1,
+        ]);
+    }
+
+    public function pendingPayment(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => SubscriptionStatus::PendingPayment,
+            'is_current' => 1,
+        ]);
+    }
 }

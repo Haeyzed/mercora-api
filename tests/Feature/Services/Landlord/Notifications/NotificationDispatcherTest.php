@@ -1,7 +1,10 @@
 <?php
 
 use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
+use App\Enums\Landlord\NotificationDeliveryStatus;
 use App\Models\Landlord\Notice;
+use App\Models\Landlord\NotificationDelivery;
 use App\Models\Landlord\NotificationPreference;
 use App\Models\Landlord\NotificationTemplate;
 use App\Models\Landlord\User;
@@ -86,4 +89,39 @@ it('is a no-op for missing templates', function () {
     ]);
 
     expect($count)->toBe(0);
+});
+
+it('audits skipped push and sms deliveries without writing notices', function () {
+    $user = auth()->user();
+
+    User::query()->whereKeyNot($user->id)->update(['is_active' => false]);
+
+    app(SettingService::class)->updateDomain('notifications', [
+        'notifications.push_enabled' => true,
+        'notifications.sms_enabled' => true,
+    ]);
+
+    $count = app(NotificationDispatcher::class)->send($user, 'payment.successful', [
+        'reference' => 'pay_1',
+        'amount' => '10.00',
+        'currency' => 'USD',
+    ]);
+
+    expect($count)->toBe(2)
+        ->and(Notice::query()->where('user_id', $user->id)->count())->toBe(2)
+        ->and(Notice::query()->whereIn('channel', [NoticeChannel::InApp, NoticeChannel::Mail])->count())->toBe(2)
+        ->and(
+            NotificationDelivery::query()
+                ->where('notification_key', 'payment.successful')
+                ->where('channel', NotificationChannel::Push->value)
+                ->where('status', NotificationDeliveryStatus::Skipped)
+                ->exists()
+        )->toBeTrue()
+        ->and(
+            NotificationDelivery::query()
+                ->where('notification_key', 'payment.successful')
+                ->where('channel', NotificationChannel::Sms->value)
+                ->where('status', NotificationDeliveryStatus::Skipped)
+                ->exists()
+        )->toBeTrue();
 });

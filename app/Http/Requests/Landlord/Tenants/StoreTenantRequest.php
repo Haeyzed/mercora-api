@@ -46,6 +46,14 @@ class StoreTenantRequest extends FormRequest
                 new NotCentralDomain,
                 Rule::unique(Domain::class, 'domain'),
             ],
+            /**
+             * First tenant staff admin (created during provisioning finalize).
+             */
+            'admin' => ['required', 'array'],
+            'admin.name' => ['required', 'string', 'max:255'],
+            'admin.email' => ['required', 'email', 'max:255'],
+            'admin.password' => ['required', 'string', 'min:8'],
+            'admin.phone' => ['sometimes', 'nullable', 'string', 'max:30'],
         ];
     }
 
@@ -57,6 +65,10 @@ class StoreTenantRequest extends FormRequest
         return [
             'name' => 'name',
             'domain' => 'domain',
+            'admin.name' => 'admin name',
+            'admin.email' => 'admin email',
+            'admin.password' => 'admin password',
+            'admin.phone' => 'admin phone',
         ];
     }
 }

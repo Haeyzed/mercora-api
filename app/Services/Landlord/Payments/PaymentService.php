@@ -322,6 +322,16 @@ class PaymentService
                     'provider_response' => $result->providerResponse,
                     'failed_at' => now(),
                 ]);
+
+                $key = $result->status === PaymentStatus::Failed
+                    ? 'payment.failed'
+                    : 'payment.cancelled';
+
+                $this->notifications->notifyActiveUsers($key, [
+                    'reference' => $payment->reference,
+                    'amount' => number_format($payment->amount / 100, 2),
+                    'currency' => $payment->currency,
+                ]);
             }
 
             return $payment->refresh();

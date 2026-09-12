@@ -9,6 +9,7 @@ use App\Models\Landlord\Notice;
 use App\Models\Landlord\Payment;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\AuthService;
 use App\Services\Landlord\Payments\PaymentService;
 use App\Services\Landlord\SettingService;
 use App\Services\Landlord\SubscriptionService;
@@ -16,6 +17,7 @@ use App\Services\Landlord\Tenants\TenantService;
 use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Notification;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -142,4 +144,58 @@ it('creates a billing notice when a subscription is canceled immediately', funct
 
     expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Canceled)
         ->and(Notice::query()->where('title', 'Subscription canceled')->count())->toBeGreaterThan(0);
+});
+
+it('creates tenant lifecycle notices for activate, reactivate, and provision outcomes', function () {
+    $tenant = Tenant::factory()->create([
+        'status' => TenantStatus::Pending,
+        'provisioned_at' => now(),
+    ]);
+
+    app(TenantService::class)->activate($tenant);
+
+    expect(Notice::query()->where('title', 'Tenant activated')->count())->toBeGreaterThan(0);
+
+    app(TenantService::class)->suspend($tenant->fresh());
+    app(TenantService::class)->reactivate($tenant->fresh());
+
+    expect(Notice::query()->where('title', 'Tenant reactivated')->count())->toBeGreaterThan(0);
+
+    app(TenantService::class)->completeProvisioning($tenant->fresh());
+    app(TenantService::class)->failProvisioning($tenant->fresh(), 'disk full');
+
+    expect(Notice::query()->where('title', 'Tenant provisioned')->count())->toBeGreaterThan(0)
+        ->and(Notice::query()->where('title', 'Tenant provision failed')->count())->toBeGreaterThan(0);
+});
+
+it('creates billing notices when a payment fails', function () {
+    $payment = Payment::factory()->create([
+        'status' => PaymentStatus::Pending,
+    ]);
+
+    fakeFlutterwaveVerify($payment->reference, $payment->amount, $payment->currency, 'failed');
+
+    app(PaymentService::class)->verify($payment);
+
+    expect($payment->fresh()->status)->toBe(PaymentStatus::Failed)
+        ->and(Notice::query()->where('title', 'Payment failed')->count())->toBeGreaterThan(0);
+});
+
+it('creates auth notices for password reset and password change', function () {
+    Notification::fake();
+
+    $user = auth()->user();
+
+    app(AuthService::class)->forgotPassword($user->email);
+
+    expect(Notice::query()->where('title', 'Password reset requested')->where('user_id', $user->id)->count())
+        ->toBeGreaterThan(0);
+
+    app(AuthService::class)->changePassword($user, [
+        'current_password' => 'password',
+        'password' => 'NewPassword1!',
+    ]);
+
+    expect(Notice::query()->where('title', 'Password changed')->where('user_id', $user->id)->count())
+        ->toBeGreaterThan(0);
 });

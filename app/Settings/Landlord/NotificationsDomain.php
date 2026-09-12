@@ -42,6 +42,16 @@ final class NotificationsDomain implements SettingsSchema
                 default: true,
                 rules: ['sometimes', 'boolean'],
             ),
+            'notifications.push_enabled' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: false,
+                rules: ['sometimes', 'boolean'],
+            ),
+            'notifications.sms_enabled' => new SettingDefinition(
+                type: SettingType::Boolean,
+                default: false,
+                rules: ['sometimes', 'boolean'],
+            ),
             'notifications.billing_alerts' => new SettingDefinition(
                 type: SettingType::Boolean,
                 default: true,

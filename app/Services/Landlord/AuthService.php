@@ -138,6 +138,12 @@ class AuthService
             $tenant = $this->tenants->store([
                 'name' => $data['tenant_name'],
                 'domain' => $data['domain'],
+                'admin' => [
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => $data['password'],
+                    'phone' => $data['phone'] ?? null,
+                ],
             ]);
 
             $planSlug = $this->settings->value('registration.default_plan_slug');
@@ -195,6 +201,15 @@ class AuthService
         }
 
         $token = Password::broker('users')->createToken($user);
+        $resetUrl = $this->passwordResetUrl($user, $token);
+        $expiresMinutes = (int) config('auth.passwords.users.expire');
+
+        $this->notifications->send($user, 'auth.password_reset', [
+            'user_name' => $user->name,
+            'email' => $user->email,
+            'reset_url' => $resetUrl,
+            'expires_minutes' => $expiresMinutes,
+        ]);
 
         $user->notify(new ResetPasswordNotification($token));
     }
@@ -226,6 +241,11 @@ class AuthService
                 if ($this->settings->value('security.revoke_tokens_on_password_change', true)) {
                     $user->tokens()->delete();
                 }
+
+                $this->notifications->send($user, 'auth.password_changed', [
+                    'user_name' => $user->name,
+                    'email' => $user->email,
+                ]);
             },
         );
 
@@ -295,6 +315,11 @@ class AuthService
         if ($this->settings->value('security.revoke_tokens_on_password_change', true)) {
             $user->tokens()->delete();
         }
+
+        $this->notifications->send($user, 'auth.password_changed', [
+            'user_name' => $user->name,
+            'email' => $user->email,
+        ]);
     }
 
     /**
@@ -416,5 +441,16 @@ class AuthService
     private function sendWelcomeNotices(User $user): void
     {
         $this->notifications->send($user, 'auth.welcome');
+    }
+
+    private function passwordResetUrl(User $user, string $token): string
+    {
+        $base = rtrim((string) config('app.landlord_password_reset_url', config('app.url')), '/');
+        $query = http_build_query([
+            'token' => $token,
+            'email' => $user->getEmailForPasswordReset(),
+        ]);
+
+        return $base.'?'.$query;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Landlord\Notifications;
 
-use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +26,7 @@ class SyncNotificationPreferencesRequest extends FormRequest
         return [
             'preferences' => ['required', 'array'],
             'preferences.*.notification_key' => ['required', 'string', 'max:100'],
-            'preferences.*.channel' => ['required', 'string', Rule::enum(NoticeChannel::class)],
+            'preferences.*.channel' => ['required', 'string', Rule::enum(NotificationChannel::class)],
             'preferences.*.enabled' => ['required', 'boolean'],
         ];
     }

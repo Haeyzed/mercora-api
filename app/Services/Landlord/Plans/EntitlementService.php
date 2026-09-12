@@ -8,6 +8,7 @@ use App\Enums\Landlord\FeatureType;
 use App\Models\Landlord\Feature;
 use App\Models\Landlord\Subscription;
 use App\Models\Landlord\Tenant;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -72,7 +73,10 @@ class EntitlementService
                     return null;
                 }
 
-                $feature = $subscription->plan->features()->where('key', $key)->first();
+                $feature = $subscription->plan->features()
+                    ->where('key', $key)
+                    ->where('features.is_active', true)
+                    ->first();
 
                 if (! $feature instanceof Feature) {
                     return null;
@@ -99,6 +103,22 @@ class EntitlementService
         $current = (int) Cache::get($versionKey, 0);
 
         Cache::forever($versionKey, $current + 1);
+    }
+
+    /**
+     * Features attached to the tenant's current subscription plan.
+     *
+     * @return Collection<int, Feature>
+     */
+    public function featuresForTenant(Tenant $tenant): Collection
+    {
+        $subscription = Subscription::query()
+            ->where('tenant_id', $tenant->id)
+            ->current()
+            ->with(['plan.features' => fn ($query) => $query->where('features.is_active', true)])
+            ->first();
+
+        return $subscription?->plan?->features ?? collect();
     }
 
     private function version(Tenant $tenant): int

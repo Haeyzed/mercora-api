@@ -38,6 +38,12 @@ class StoreUserRequest extends FormRequest
              */
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')],
             /**
+             * Optional E.164 phone number for SMS notifications.
+             *
+             * @example +15551234567
+             */
+            'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
+            /**
              * Initial password. Hashed before storage.
              *
              * @example password

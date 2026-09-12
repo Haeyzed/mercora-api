@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
  * Landlord subscription catalog plan.
@@ -31,7 +32,7 @@ use Spatie\Sluggable\SlugOptions;
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
-    use AllowsIncludes, HasFactory, HasSlug, LogsLandlordActivity, SoftDeletes;
+    use AllowsIncludes, CentralConnection, HasFactory, HasSlug, LogsLandlordActivity, SoftDeletes;
 
     /**
      * @var array<string, mixed>

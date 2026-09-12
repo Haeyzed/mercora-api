@@ -15,15 +15,15 @@ use Illuminate\Support\Facades\Log;
 use Stancl\Tenancy\Database\DatabaseManager;
 use Stancl\Tenancy\Jobs\CreateDatabase;
 use Stancl\Tenancy\Jobs\MigrateDatabase;
+use Stancl\Tenancy\Jobs\SeedDatabase;
 use Throwable;
 
 /**
  * Provision tenant infrastructure after subscription signup or payment.
  *
  * Idempotent: unique per tenant for one hour ({@see UniqueFor}). Skips work when
- * the tenant is already active. Creates the tenant database and runs migrations,
- * then marks provisioning complete via {@see TenantService}. Typically dispatched
- * after a successful subscription payment enables tenant access.
+ * the tenant is already active. Creates the tenant database, migrates, seeds RBAC,
+ * finalizes the first Admin from pending_provision, then marks provisioning complete.
  */
 #[UniqueFor(3600)]
 class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
@@ -44,13 +44,12 @@ class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * Create tenant database, migrate schema, and activate the tenant record.
+     * Create tenant database, migrate, seed, finalize admin, and activate.
      *
      * No-op when the tenant is missing or already active. Infrastructure steps are
-     * skipped in the testing environment. Failures mark the tenant as failed and
-     * re-throw for queue retry semantics.
+     * skipped in the testing environment unless RUN_TENANT_PROVISIONING_INTEGRATION.
      *
-     * @throws Throwable When database creation or migration fails irrecoverably.
+     * @throws Throwable When database creation, seed, or finalize fails irrecoverably.
      */
     public function handle(TenantService $tenantService): void
     {
@@ -67,11 +66,12 @@ class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
                 $this->provisionInfrastructure($tenant);
             }
 
-            $tenantService->completeProvisioning($tenant);
+            $tenantService->completeProvisioning($tenant->fresh() ?? $tenant);
         } catch (Throwable $exception) {
             Log::error('Tenant provisioning failed.', [
                 'tenant_id' => $tenant->id,
                 'exception' => $exception::class,
+                'message' => $exception->getMessage(),
             ]);
 
             $tenantService->failProvisioning($tenant, 'Tenant provisioning failed.');
@@ -80,13 +80,6 @@ class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    /**
-     * Run Stancl tenancy database creation and migration jobs.
-     *
-     * Treats "database already exists" errors as idempotent success.
-     *
-     * @throws Throwable When database creation fails for reasons other than duplicate database.
-     */
     private function shouldProvisionInfrastructure(): bool
     {
         if (! app()->environment('testing')) {
@@ -96,6 +89,9 @@ class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
         return filter_var(env('RUN_TENANT_PROVISIONING_INTEGRATION', false), FILTER_VALIDATE_BOOL);
     }
 
+    /**
+     * @throws Throwable
+     */
     private function provisionInfrastructure(Tenant $tenant): void
     {
         try {
@@ -107,5 +103,7 @@ class ProvisionTenantJob implements ShouldBeUnique, ShouldQueue
         }
 
         (new MigrateDatabase($tenant))->handle();
+        (new SeedDatabase($tenant))->handle();
+        (new FinalizeTenantProvision($tenant))->handle();
     }
 }

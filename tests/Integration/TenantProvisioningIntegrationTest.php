@@ -16,8 +16,10 @@
  */
 
 use App\Enums\Landlord\TenantStatus;
+use App\Enums\Tenant\RoleName;
 use App\Jobs\Landlord\ProvisionTenantJob;
 use App\Models\Landlord\Tenant;
+use App\Models\Tenant\User;
 use App\Services\Landlord\Tenants\TenantProvisioningVerifier;
 use Illuminate\Support\Facades\Schema;
 
@@ -45,9 +47,17 @@ afterEach(function (): void {
     }
 });
 
-it('provisions a tenant database and runs tenant migrations', function () {
+it('provisions a tenant database, seeds RBAC, and creates the Admin user', function () {
     $tenant = Tenant::factory()->create([
         'status' => TenantStatus::Provisioning,
+        'pending_provision' => [
+            'admin' => [
+                'name' => 'Integration Admin',
+                'email' => 'integration-admin@example.test',
+                'password' => 'Password1!',
+            ],
+            'intended_status' => TenantStatus::Active->value,
+        ],
     ]);
 
     $tenant->createDomain('integration-'.uniqid().'.test');
@@ -59,6 +69,7 @@ it('provisions a tenant database and runs tenant migrations', function () {
 
     expect($tenant->status)->toBe(TenantStatus::Active)
         ->and($tenant->provisioned_at)->not->toBeNull()
+        ->and($tenant->pending_provision)->toBeNull()
         ->and(app(TenantProvisioningVerifier::class)->isProvisioned($tenant))->toBeTrue();
 
     $databaseName = $tenant->database()->getName();
@@ -66,6 +77,13 @@ it('provisions a tenant database and runs tenant migrations', function () {
     expect($tenant->database()->manager()->databaseExists($databaseName))->toBeTrue();
 
     $tenant->run(function (): void {
-        expect(Schema::hasTable('migrations'))->toBeTrue();
+        expect(Schema::hasTable('migrations'))->toBeTrue()
+            ->and(Schema::hasTable('users'))->toBeTrue()
+            ->and(Schema::hasTable('roles'))->toBeTrue();
+
+        $admin = User::query()->where('email', 'integration-admin@example.test')->first();
+
+        expect($admin)->not->toBeNull()
+            ->and($admin->hasRole(RoleName::Admin->value))->toBeTrue();
     });
 });

@@ -21,6 +21,11 @@ function tenantPayload(array $overrides = []): array
     return [
         'name' => 'Acme Stores',
         'domain' => 'acme.example.com',
+        'admin' => [
+            'name' => 'Acme Admin',
+            'email' => 'admin@acme.example.com',
+            'password' => 'Password1!',
+        ],
         ...$overrides,
     ];
 }
@@ -154,6 +159,43 @@ describe('store', function () {
             'domain' => 'acme.example.com',
         ]);
         $this->assertNotNull(Tenant::query()->where('name', 'Acme Stores')->value('provisioned_at'));
+    });
+
+    it('stashes pending_provision.admin for finalize', function () {
+        Bus::fake([ProvisionTenantJob::class]);
+
+        $this->postJson('/api/landlord/tenants', tenantPayload([
+            'name' => 'Pending Store',
+            'domain' => 'pending-store.example.com',
+            'admin' => [
+                'name' => 'Pending Admin',
+                'email' => 'pending@store.test',
+                'password' => 'Password1!',
+                'phone' => '+15550001111',
+            ],
+        ]))->assertCreated();
+
+        $tenant = Tenant::query()->where('name', 'Pending Store')->first();
+
+        expect($tenant)->not->toBeNull()
+            ->and($tenant->pending_provision)->toMatchArray([
+                'admin' => [
+                    'name' => 'Pending Admin',
+                    'email' => 'pending@store.test',
+                    'password' => 'Password1!',
+                    'phone' => '+15550001111',
+                ],
+                'intended_status' => TenantStatus::Active->value,
+            ]);
+    });
+
+    it('requires admin credentials when creating a tenant', function () {
+        $this->postJson('/api/landlord/tenants', [
+            'name' => 'No Admin Store',
+            'domain' => 'no-admin.example.com',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['admin']);
     });
 
     it('leaves the tenant provisioning when the job is queued', function () {

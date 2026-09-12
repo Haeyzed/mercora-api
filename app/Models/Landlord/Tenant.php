@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
+use App\Enums\Landlord\SubscriptionStatus;
 use App\Enums\Landlord\TenantStatus;
 use App\Models\Concerns\AllowsIncludes;
 use App\Models\Concerns\LogsLandlordActivity;
@@ -21,7 +22,7 @@ use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
-#[Fillable(['name', 'slug', 'status', 'provisioned_at', 'provision_error'])]
+#[Fillable(['name', 'slug', 'status', 'provisioned_at', 'provision_error', 'pending_provision'])]
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
     /** @use HasFactory<TenantFactory> */
@@ -113,6 +114,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Current subscription that grants tenant product API access, if any.
+     */
+    public function activeSubscription(): ?Subscription
+    {
+        return $this->subscriptions()
+            ->where('is_current', 1)
+            ->whereIn('status', SubscriptionStatus::accessGrantingCases())
+            ->latest('id')
+            ->first();
     }
 
     /**

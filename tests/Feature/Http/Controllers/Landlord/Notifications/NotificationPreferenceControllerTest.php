@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\Landlord\NoticeChannel;
+use App\Enums\Landlord\NotificationChannel;
 use App\Models\Landlord\NotificationPreference;
 use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -38,12 +38,12 @@ describe('update', function () {
             'preferences' => [
                 [
                     'notification_key' => 'payment.successful',
-                    'channel' => NoticeChannel::InApp->value,
+                    'channel' => NotificationChannel::InApp->value,
                     'enabled' => false,
                 ],
                 [
                     'notification_key' => 'auth.welcome',
-                    'channel' => NoticeChannel::InApp->value,
+                    'channel' => NotificationChannel::InApp->value,
                     'enabled' => false,
                 ],
             ],
@@ -54,21 +54,25 @@ describe('update', function () {
             NotificationPreference::query()
                 ->where('user_id', $user->id)
                 ->where('notification_key', 'payment.successful')
-                ->where('channel', NoticeChannel::InApp->value)
+                ->where('channel', NotificationChannel::InApp->value)
                 ->value('enabled')
         )->toBeFalse()
             ->and(
                 NotificationPreference::query()
                     ->where('user_id', $user->id)
                     ->where('notification_key', 'auth.welcome')
-                    ->where('channel', NoticeChannel::InApp->value)
+                    ->where('channel', NotificationChannel::InApp->value)
                     ->value('enabled')
             )->toBeTrue();
 
         $welcome = collect($this->getJson('/api/landlord/notification-preferences')->json('data'))
             ->firstWhere('notification_key', 'auth.welcome');
 
-        expect($welcome['channels'][0]['locked'])->toBeTrue()
-            ->and($welcome['channels'][0]['enabled'])->toBeTrue();
+        $inApp = collect($welcome['channels'])->firstWhere('channel', NotificationChannel::InApp->value);
+        $push = collect($welcome['channels'])->firstWhere('channel', NotificationChannel::Push->value);
+
+        expect($inApp['locked'])->toBeTrue()
+            ->and($inApp['enabled'])->toBeTrue()
+            ->and($push['locked'])->toBeFalse();
     });
 });

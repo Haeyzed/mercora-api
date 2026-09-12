@@ -17,12 +17,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 #[Fillable(['tenant_id', 'plan_id', 'plan_price_id', 'plan_name', 'price', 'currency', 'interval', 'interval_count', 'status', 'is_current', 'starts_at', 'ends_at', 'trial_ends_at', 'canceled_at', 'dunning_attempts', 'last_dunned_at'])]
 class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
-    use AllowsIncludes, HasFactory, LogsLandlordActivity, SoftDeletes;
+    use AllowsIncludes, CentralConnection, HasFactory, LogsLandlordActivity, SoftDeletes;
 
     /**
      * Create a new factory instance for the model.
@@ -143,6 +144,14 @@ class Subscription extends Model
                     ->orWhere('slug', 'like', $like);
             });
         });
+    }
+
+    /**
+     * Whether this subscription grants tenant product API access.
+     */
+    public function grantsAccess(): bool
+    {
+        return $this->status->grantsAccess();
     }
 
     /**

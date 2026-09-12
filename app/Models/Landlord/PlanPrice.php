@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
  * Currency-specific price for a catalog plan.
@@ -37,7 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class PlanPrice extends Model
 {
     /** @use HasFactory<PlanPriceFactory> */
-    use HasFactory, SoftDeletes;
+    use CentralConnection, HasFactory, SoftDeletes;
 
     /**
      * Create a new factory instance for the model.

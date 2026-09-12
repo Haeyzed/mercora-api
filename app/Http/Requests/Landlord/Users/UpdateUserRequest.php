@@ -41,6 +41,12 @@ class UpdateUserRequest extends FormRequest
              * @example ada@mercora.test
              */
             'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user?->id)],
+            /**
+             * Optional E.164 phone number for SMS notifications.
+             *
+             * @example +15551234567
+             */
+            'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
         ];
     }
 }

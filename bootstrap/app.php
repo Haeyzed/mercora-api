@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Middleware\EnsureActiveSubscription;
+use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsurePlatformNotInMaintenance;
+use App\Http\Middleware\SetTenantGuard;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,11 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'platform.available' => EnsurePlatformNotInMaintenance::class,
+            'tenant.guard' => SetTenantGuard::class,
+            'subscription.active' => EnsureActiveSubscription::class,
+            'feature' => EnsureFeature::class,
         ]);
 
         $middleware->api(prepend: [
             EnsurePlatformNotInMaintenance::class,
         ]);
+
+        // Guard setter must run before Authenticate so auth:tenant resolves the right provider.
+        $middleware->prependToPriorityList(
+            before: Authenticate::class,
+            prepend: SetTenantGuard::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
