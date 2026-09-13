@@ -22,6 +22,11 @@ it('logs tenant creation without exposing provision errors', function () {
     $this->postJson('/api/landlord/tenants', [
         'name' => 'Acme Stores',
         'domain' => 'acme.example.com',
+        'admin' => [
+            'name' => 'Acme Admin',
+            'email' => 'admin@acme.example.com',
+            'password' => 'Password1!',
+        ],
     ])->assertCreated();
 
     $tenant = Tenant::query()->where('name', 'Acme Stores')->first();

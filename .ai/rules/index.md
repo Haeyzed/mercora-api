@@ -23,7 +23,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Landlord/Payments/** | .ai/rules/payments.md |
 | app/Http/Controllers/Landlord/Plans/** | .ai/rules/plans.md |
 | app/Policies/Landlord/** | .ai/rules/policies-landlord.md |
-| app/Providers/TenancyServiceProvider.php, app/Providers/AppServiceProvider.php | .ai/rules/providers.md |
+| app/Providers/TenancyServiceProvider.php, app/Providers/AppServiceProvider.php, app/Providers/ScrambleDocumentationServiceProvider.php | .ai/rules/providers.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
 | app/Services/Tenant/**, app/Services/Tenant/UserService.php | .ai/rules/services-tenant.md |
 | app/Services/**, app/Http/Controllers/Landlord/** | .ai/rules/services.md |

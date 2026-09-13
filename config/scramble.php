@@ -1,6 +1,8 @@
 <?php
 
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
+use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 
 return [
     /*
@@ -48,9 +50,10 @@ return [
         'version' => env('API_VERSION', '0.0.1'),
 
         /*
-         * Description rendered on the home page of the API documentation (`/docs/api`).
+         * Fallback description for the default API. Landlord/tenant sites override this
+         * in ScrambleDocumentationServiceProvider.
          */
-        'description' => 'Authenticate via `POST /api/landlord/auth/login`, then use the returned token as `Authorization: Bearer {token}` on protected endpoints.',
+        'description' => 'See /docs/landlord and /docs/tenant for API documentation.',
     ],
 
     'ui' => [
@@ -161,10 +164,10 @@ return [
      * are documented without auth.
      */
     'security_strategy' => [
-        \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
+        MiddlewareAuthSecurityStrategy::class,
         [
             'middleware' => ['auth', 'auth:*'],
-            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer', 'Sanctum'),
+            'scheme' => SecurityScheme::http('bearer', 'Sanctum'),
         ],
     ],
 ];

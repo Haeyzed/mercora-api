@@ -2,6 +2,7 @@
 paths:
   - app/Providers/TenancyServiceProvider.php
   - app/Providers/AppServiceProvider.php
+  - app/Providers/ScrambleDocumentationServiceProvider.php
 ---
 
 # Providers
@@ -17,3 +18,9 @@ Register InitializeTenancyByDomainOrHeader and PreventAccessFromCentralDomainsUn
 
 ## Do not use bound() for SettingService
 Never gate SettingService reads on app()->bound(SettingService::class)—auto-wired classes are not bound until resolved. Use Schema::hasTable('settings') inside try/catch and app()->make() instead.
+
+## API throttle is per-minute only
+landlord-api and tenant-api throttles use Limit::perMinute only. Do not add a perSecond burst derived from api.burst_limit/60 — that capped ~2 rps and 429'd normal multi-request UI/test sequences.
+
+## Scramble docs are split landlord / tenant
+Default `/docs/api` is disabled via `Scramble::ignoreDefaultRoutes()`. Serve `/docs/landlord` (`api/landlord/*`) and `/docs/tenant` (`api/tenant/*` + `api/public/*`) from ScrambleDocumentationServiceProvider. Gate `viewApiDocs` allows access outside production. Do not reintroduce a single combined docs site.

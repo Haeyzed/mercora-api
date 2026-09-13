@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord\Notifications;
 
-use App\Enums\Landlord\NotificationChannel;
 use App\Models\Landlord\User;
 use App\Services\Landlord\Notifications\Contracts\NotificationChannelHandler;
 use App\Services\Landlord\SettingService;
@@ -46,10 +45,7 @@ class ChannelResolver
                 continue;
             }
 
-            if ($name === NotificationChannel::Sms && blank($user->phone)) {
-                continue;
-            }
-
+            // SMS without a phone still resolves so SmsChannel can audit a skipped delivery.
             $resolved[] = $channel;
         }
 

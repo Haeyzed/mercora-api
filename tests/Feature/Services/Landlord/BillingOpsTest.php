@@ -9,6 +9,7 @@ use App\Models\Landlord\Tenant;
 use App\Services\Landlord\BillingOpsService;
 use App\Services\Landlord\SettingService;
 use App\Services\Landlord\Tenants\TenantService;
+use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +19,7 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(function (): void {
     actingAsLandlord();
     Cache::flush();
+    $this->seed(NotificationTemplateSeeder::class);
 });
 
 describe('billing reminders', function () {

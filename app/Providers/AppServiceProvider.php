@@ -141,13 +141,11 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('landlord-api', function (Request $request) {
             $perMinute = max(1, (int) $this->setting('api.rate_limit_per_minute', 60));
-            $burst = max($perMinute, (int) $this->setting('api.burst_limit', 120));
             $key = (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
 
-            return [
-                Limit::perMinute($perMinute)->by('landlord-api:'.$key),
-                Limit::perSecond(max(1, (int) ceil($burst / 60)))->by('landlord-api-burst:'.$key),
-            ];
+            // Sustained per-minute cap only. A per-second "burst" of burst_limit/60 (~2 rps)
+            // incorrectly 429'd normal UI sequences (list + show + action in the same second).
+            return Limit::perMinute($perMinute)->by('landlord-api:'.$key);
         });
 
         RateLimiter::for('tenant-auth', function (Request $request) {
@@ -161,13 +159,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('tenant-api', function (Request $request) {
             $perMinute = max(1, (int) $this->setting('api.rate_limit_per_minute', 60));
-            $burst = max($perMinute, (int) $this->setting('api.burst_limit', 120));
             $key = (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
 
-            return [
-                Limit::perMinute($perMinute)->by('tenant-api:'.$key),
-                Limit::perSecond(max(1, (int) ceil($burst / 60)))->by('tenant-api-burst:'.$key),
-            ];
+            return Limit::perMinute($perMinute)->by('tenant-api:'.$key);
         });
     }
 
